@@ -58,6 +58,25 @@ def fingerprint(*parts) -> str:
     return h.hexdigest()
 
 
+VALID = ROOT / "validation"
+
+
+def validation_sites() -> dict:
+    """site folder -> basin name, for pre-computed results committed to the repo."""
+    out = {}
+    for f in sorted(VALID.glob("*/results/run_info.json")):
+        out[f.parent.parent.name] = json.loads(f.read_text()).get("basin", f.parent.parent.name)
+    return out
+
+
+@st.cache_resource(show_spinner="Loading results...")
+def saved_case(site: str):
+    from multigauge.study import load_saved_study
+
+    data = mg.BasinData.from_folder(VALID / site / "data")
+    return data, load_saved_study(VALID / site / "results")
+
+
 def bar(label):
     b = st.progress(0.0, label)
     return b, (lambda f, m: b.progress(min(max(f, 0.0), 1.0), m[:90]))
@@ -68,12 +87,23 @@ def bar(label):
 # ==========================================================================
 with st.sidebar:
     st.header("1 · Basin data")
-    source = st.radio("Data source", ["Demo basin", "Upload my basin"], horizontal=True,
-                      help="The demo is a synthetic basin where the true rainfall is known, with 10 gauges and 12 years of data.")
-    data, data_key = None, None
-    if source == "Demo basin":
+    sites = validation_sites()
+    sources = (["Real basins (pre-computed)"] if sites else []) + ["Demo basin", "Upload my basin"]
+    source = st.radio("Data source", sources,
+                      help="Real basins: results already computed on U.S. basins the model never saw in training, "
+                           "shown instantly. Demo: a synthetic basin where the true rainfall is known. "
+                           "Upload: run the study on your own files (slow on the free server; Colab is faster).")
+    data, data_key, saved = None, None, None
+    if source == "Real basins (pre-computed)":
+        site = st.selectbox("Basin", list(sites), format_func=lambda k: f"{sites[k]} ({k})")
+        data, saved = saved_case(site)
+        data_key = f"saved-{site}"
+    elif source == "Demo basin":
         data, data_key = demo_basin(), "demo"
     else:
+        st.caption("Training on the free cloud server is slow and may be throttled. For your own basin, the "
+                   "[Run your basin notebook](https://colab.research.google.com/github/ogunbajoadeyinka/multigauge-hydro/blob/main/notebooks/run_your_basin.ipynb) "
+                   "does everything on a free GPU from just a USGS gauge number.")
         st.download_button("Download example files", template_zip(), "multigauge_example_basin.zip",
                            help="A small example of every file format.")
         files = {
@@ -107,6 +137,8 @@ with st.sidebar:
         else:
             st.info("Upload the four required files (*) to begin.")
 
+    if saved is not None:
+        st.success("Pre-computed results: nothing to run. Explore the tabs.")
     st.header("2 · Pre-trained model")
     models = mg.available_pretrained()
     default = "camels-us" if "camels-us" in models else (models[0] if models else None)
@@ -125,7 +157,8 @@ with st.sidebar:
     use_gr4j = c1.checkbox("GR4J", True, help="Calibrated conceptual model, the classic benchmark.")
     use_local = c2.checkbox("Local LSTM", True, help="LSTM trained from scratch on this basin only.")
     ablation = st.checkbox("Station ablation", help="Retrain without each gauge (slow).")
-    run = st.button("Run gauge-value study", type="primary", width="stretch", disabled=data is None or not models)
+    run = st.button("Run gauge-value study", type="primary", width="stretch",
+                    disabled=data is None or not models or saved is not None)
 
 
 # ==========================================================================
@@ -172,13 +205,21 @@ res = st.session_state.get("result")
 if res is not None and st.session_state.get("result_data") != data_key:
     res = None
 stale = res is not None and st.session_state.get("result_key") != settings_key
+if saved is not None:
+    res, stale = saved, False
+    summ = VALID / "summary.csv"
+    if summ.exists():
+        with st.expander("All validation basins at a glance", expanded=True):
+            st.dataframe(pd.read_csv(summ), width="stretch", hide_index=True)
+            st.caption("Test period 2018–2023 water years, basins not used in pre-training. NSE: 1 is perfect. "
+                       "NSE_gain_from_gauges: best improvement from adding the basin's rain gauges to the fine-tuned model.")
 
 tabs = st.tabs(["Basin & gauges", "Model comparison", "Gauge value", "Sub-basins", "Forecast", "Download", "Method"])
 from multigauge import report as R  # noqa: E402
 
 # ---------------------------------------------------------------- basin
 with tabs[0]:
-    vor = res.voronoi if res is not None else mg.voronoi_weights(data.stations, data.boundary)
+    vor = getattr(res, "voronoi", None) or mg.voronoi_weights(data.stations, data.boundary)
     c = st.columns(4)
     c[0].metric("Rain gauges", len(data.station_ids))
     c[1].metric("Days of record", f"{len(data.dates):,}")
@@ -240,7 +281,7 @@ with tabs[2]:
             c2.plotly_chart(R.fig_gauge_value(res.gauge_value, "CRPS_reduction_pct"), config=PLOT, width="stretch")
         if res.importance is not None:
             st.plotly_chart(R.fig_importance(res.importance), config=PLOT, width="stretch")
-        if res.ablation is not None:
+        if getattr(res, "ablation", None) is not None:
             st.plotly_chart(R.fig_ablation(res.ablation), config=PLOT, width="stretch")
         st.dataframe(res.station_summary.round(3), width="stretch")
 
@@ -250,7 +291,18 @@ with tabs[3]:
                 "outlet with learned travel times (gamma) or a graph neural network (GNN). Shows where flood flow "
                 "comes from and where gauges matter.")
     subs = None
-    if data.meta.get("synthetic_zones") is not None:
+    if saved is not None:
+        ex = saved.extras
+        if "subbasin_models" in ex:
+            sm = ex["subbasin_models"].query("period == 'test'")[["model", "NSE", "KGE"]]
+            sm["model"] = sm["model"].map(lambda k: R.LABELS.get(k, k))
+            st.dataframe(sm.round(3), width="stretch", hide_index=True)
+            c = ex["subbasin_contributions"].set_index(ex["subbasin_contributions"].columns[0])
+            st.plotly_chart(R.fig_contributions(c), config=PLOT, width="stretch")
+            st.dataframe(c.round(3), width="stretch")
+        else:
+            st.info("Sub-basin results were computed for the Washita; choose it in the sidebar.")
+    elif data.meta.get("synthetic_zones") is not None:
         subs = mg.SubbasinSet.from_synthetic(data)
     else:
         z = st.file_uploader("Sub-basins (ZIP with subbasins.geojson and one <id>.csv of Daymet forcings per sub-basin)", type="zip",
@@ -304,49 +356,60 @@ with tabs[4]:
             st.plotly_chart(R.fig_forecast(issued), config=PLOT, width="stretch")
             if issued.get("note"):
                 st.caption(issued["note"])
-    st.subheader("Forecast skill for this basin")
-    st.caption("Trains a forecast model and tests it on the test period, using observed weather as a perfect forecast.")
-    if st.button("Train and test a forecast model"):
-        import numpy as np
+    if saved is not None:
+        if "forecast_skill" in saved.extras:
+            st.subheader("Forecast skill (test period)")
+            st.plotly_chart(R.fig_skill_by_lead(saved.extras["forecast_skill"]), config=PLOT, width="stretch")
+        else:
+            st.info("Forecast tests were run for the Washita; choose it in the sidebar.")
+    if saved is None:
+        st.subheader("Forecast skill for this basin")
+        st.caption("Trains a forecast model and tests it on the test period, using observed weather as a perfect forecast.")
+        if st.button("Train and test a forecast model"):
+            import numpy as np
 
-        from multigauge.forecast import ForecastConfig, ForecastModel
-        from multigauge.study import StudyConfig, make_periods
+            from multigauge.forecast import ForecastConfig, ForecastModel
+            from multigauge.study import StudyConfig, make_periods
 
-        base = pretrained(model_name)
-        basin = data.to_basin()
-        periods = make_periods(data.dates, StudyConfig(), base.cfg.lookback)
-        m = {k: np.asarray((data.dates >= a) & (data.dates <= e)) for k, (a, e) in periods.items()}
-        b, cb = bar("Fine-tuning...")
-        ft = mg.finetune(base, basin, m["train"], m["validation"], epochs=8)
-        fm = ForecastModel(ft, ForecastConfig(epochs=4 if effort == "quick" else 12)).fit(
-            basin, m["train"], m["validation"], progress=lambda e, n, s: cb(e / n, f"Forecast model: epoch {e}/{n}"))
-        iss = np.where(m["test"])[0]
-        iss = iss[iss < len(basin.dates) - fm.cfg.horizon - 1]
-        skill = fm.skill_by_lead(basin, iss)
-        last = len(basin.dates) - fm.cfg.horizon - 1
-        fc = fm.forecast(basin.subset(None, basin.dates[last]), basin.forcings.iloc[last + 1 : last + 1 + fm.cfg.horizon])
-        b.empty()
-        st.session_state["forecast"] = (data_key, skill, fc, basin.dates[last], basin.q_mm.iloc[last - 30 : last + 1 + fm.cfg.horizon])
-    fs = st.session_state.get("forecast")
-    if fs is not None and fs[0] == data_key:
-        _, skill, fc, when, recent = fs
-        st.plotly_chart(R.fig_skill_by_lead(skill), config=PLOT, width="stretch")
-        from multigauge.features import mm_per_day_to_flow
+            base = pretrained(model_name)
+            basin = data.to_basin()
+            periods = make_periods(data.dates, StudyConfig(), base.cfg.lookback)
+            m = {k: np.asarray((data.dates >= a) & (data.dates <= e)) for k, (a, e) in periods.items()}
+            b, cb = bar("Fine-tuning...")
+            ft = mg.finetune(base, basin, m["train"], m["validation"], epochs=8)
+            fm = ForecastModel(ft, ForecastConfig(epochs=4 if effort == "quick" else 12)).fit(
+                basin, m["train"], m["validation"], progress=lambda e, n, s: cb(e / n, f"Forecast model: epoch {e}/{n}"))
+            iss = np.where(m["test"])[0]
+            iss = iss[iss < len(basin.dates) - fm.cfg.horizon - 1]
+            skill = fm.skill_by_lead(basin, iss)
+            last = len(basin.dates) - fm.cfg.horizon - 1
+            fc = fm.forecast(basin.subset(None, basin.dates[last]), basin.forcings.iloc[last + 1 : last + 1 + fm.cfg.horizon])
+            b.empty()
+            st.session_state["forecast"] = (data_key, skill, fc, basin.dates[last], basin.q_mm.iloc[last - 30 : last + 1 + fm.cfg.horizon])
+        fs = st.session_state.get("forecast")
+        if fs is not None and fs[0] == data_key:
+            _, skill, fc, when, recent = fs
+            st.plotly_chart(R.fig_skill_by_lead(skill), config=PLOT, width="stretch")
+            from multigauge.features import mm_per_day_to_flow
 
-        fcf = fc.copy()
-        for col in fcf.columns:
-            if col != "lead_day":
-                fcf[col] = mm_per_day_to_flow(fcf[col], data.area_km2, data.flow_unit)
-        obs = mm_per_day_to_flow(recent, data.area_km2, data.flow_unit)
-        issued = {"basin": data.name, "issued": str(when.date()), "unit": data.flow_unit,
-                  "recent_observed": {str(k.date()): (None if pd.isna(v) else float(v)) for k, v in obs.items()},
-                  "forecast": [{"date": str(i.date()), **{k: float(v) for k, v in r.items()}} for i, r in fcf.iterrows()]}
-        st.plotly_chart(R.fig_forecast(issued, history_days=40), config=PLOT, width="stretch")
-        st.caption("Example forecast issued on the last available date, compared with what actually happened.")
+            fcf = fc.copy()
+            for col in fcf.columns:
+                if col != "lead_day":
+                    fcf[col] = mm_per_day_to_flow(fcf[col], data.area_km2, data.flow_unit)
+            obs = mm_per_day_to_flow(recent, data.area_km2, data.flow_unit)
+            issued = {"basin": data.name, "issued": str(when.date()), "unit": data.flow_unit,
+                      "recent_observed": {str(k.date()): (None if pd.isna(v) else float(v)) for k, v in obs.items()},
+                      "forecast": [{"date": str(i.date()), **{k: float(v) for k, v in r.items()}} for i, r in fcf.iterrows()]}
+            st.plotly_chart(R.fig_forecast(issued, history_days=40), config=PLOT, width="stretch")
+            st.caption("Example forecast issued on the last available date, compared with what actually happened.")
 
 # ---------------------------------------------------------------- download
 with tabs[5]:
-    if res is None:
+    if saved is not None:
+        rep = VALID / site / "results" / "report.html"
+        if rep.exists():
+            st.download_button("Download the full report (HTML)", rep.read_bytes(), f"multigauge_{site}_report.html", type="primary")
+    elif res is None:
         st.info("Run the study to download results.")
     else:
         @st.cache_data(show_spinner="Packaging results...")

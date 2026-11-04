@@ -413,3 +413,18 @@ def test_ghcn_inventory_selection():
     assert list(inv.columns) == ["id", "lat", "lon", "element", "first", "last"]
     sel = select_gauges(inv, _box(-98.3, 34.8, -97.7, 35.2), "2001-10-01", "2023-09-30")
     assert list(sel["id"]) == ["USC00000001"]
+
+
+def test_saved_study_round_trip(tmp_path, base_model, basin_data):
+    from multigauge.study import load_saved_study
+
+    cfg = mg.StudyConfig(finetune_epochs=1, include_local=False, include_gr4j=False, gauge_inputs=["voronoi"],
+                         permutation_repeats=1)
+    res = mg.run_study(basin_data, base_model, cfg)
+    out = res.save(tmp_path / "r")
+    s = load_saved_study(out)
+    assert set(s.models) == set(res.models)
+    assert s.best_model() == res.best_model()
+    np.testing.assert_allclose(s.flow("finetuned")["mean"].dropna(), res.flow("finetuned")["mean"].dropna(), rtol=1e-6)
+    from multigauge import report as R
+    R.fig_hydrograph({m: s.flow(m) for m in s.models}, s.models, "test", s.flow_unit, band_model="finetuned")
