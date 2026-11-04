@@ -393,3 +393,23 @@ def test_cli(tmp_path, capsys, base_model):
               "--seeds", "1", "--epochs", "1", "--no-local", "--no-gr4j", "--gauge-inputs", "voronoi"])
     assert (tmp_path / "r" / "report.html").exists()
     assert "Fine-tuned + Voronoi gauges" in capsys.readouterr().out
+
+
+def test_ghcn_inventory_selection():
+    from shapely.geometry import box as _box
+
+    from multigauge.prepare import read_ghcn_inventory, select_gauges
+
+    def row(i, lat, lon, el, a, b):
+        return f"{i:<11}{lat:>9.4f}{lon:>10.4f} {el:<4}{a:>5}{b:>5}"
+
+    text = "\n".join([
+        row("USC00000001", 35.00, -98.00, "PRCP", 1990, 2024),   # inside, full record
+        row("USC00000002", 35.05, -98.05, "PRCP", 2015, 2024),   # inside, short record
+        row("USC00000003", 35.00, -98.00, "TMAX", 1990, 2024),   # wrong element
+        row("USC00000004", 40.00, -90.00, "PRCP", 1990, 2024),   # far away
+    ])
+    inv = read_ghcn_inventory(text)
+    assert list(inv.columns) == ["id", "lat", "lon", "element", "first", "last"]
+    sel = select_gauges(inv, _box(-98.3, 34.8, -97.7, 35.2), "2001-10-01", "2023-09-30")
+    assert list(sel["id"]) == ["USC00000001"]
