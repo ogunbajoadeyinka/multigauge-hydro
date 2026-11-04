@@ -1,8 +1,8 @@
 """Read the CAMELS-US data set (Newman et al., 2015; Addor et al., 2017).
 
-Download "CAMELS time series meteorology, observed flow, meta data"
-(basin_timeseries_v1p2_metForcing_obsFlow) and "CAMELS Attributes" from
-https://gdex.ucar.edu/datasets/d629000/ and unzip both into one folder.
+Download ``basin_timeseries_v1p2_metForcing_obsFlow.zip`` and ``camels_topo.txt``
+(CAMELS v1.2, NCAR GDEX: https://gdex.ucar.edu/dataset/camels.html; also on
+Zenodo, record 15529996) and unzip into one folder.
 The expected layout is::
 
     camels_root/
