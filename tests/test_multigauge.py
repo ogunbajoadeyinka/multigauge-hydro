@@ -428,3 +428,14 @@ def test_saved_study_round_trip(tmp_path, base_model, basin_data):
     np.testing.assert_allclose(s.flow("finetuned")["mean"].dropna(), res.flow("finetuned")["mean"].dropna(), rtol=1e-6)
     from multigauge import report as R
     R.fig_hydrograph({m: s.flow(m) for m in s.models}, s.models, "test", s.flow_unit, band_model="finetuned")
+
+
+def test_training_resumes_from_checkpoint(tmp_path, pretrain_set):
+    tr = [mg.transfer.period_mask(b.dates, ("2000-01-01", "2003-06-30")) for b in pretrain_set]
+    va = [mg.transfer.period_mask(b.dates, ("2003-07-01", "2004-12-31")) for b in pretrain_set]
+    cfg = ModelConfig(**{**TINY.__dict__, "epochs": 2, "patience": 5})
+    ck = tmp_path / "ck.pt"
+    a = StreamflowModel.new(pretrain_set, tr, cfg).fit(pretrain_set, tr, va, epochs=1, checkpoint=ck)
+    assert ck.exists() and len(a.history) == 1
+    b = StreamflowModel.new(pretrain_set, tr, cfg).fit(pretrain_set, tr, va, epochs=2, checkpoint=ck)
+    assert [h["epoch"] for h in b.history] == [1, 2]   # resumed: epoch 1 was not repeated

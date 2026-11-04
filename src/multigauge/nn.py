@@ -287,7 +287,11 @@ class StreamflowModel:
         learning_rate: Optional[float] = None,
         epochs: Optional[int] = None,
         progress: Optional[Callable[[int, int, float], None]] = None,
+        checkpoint=None,
     ) -> "StreamflowModel":
+        """Train. ``checkpoint`` (a file path) saves the training state after
+        every epoch and resumes from it if it exists, so an interrupted run
+        (for example a dropped Colab session) loses at most one epoch."""
         cfg = self.cfg
         if cfg.threads:
             torch.set_num_threads(cfg.threads)
@@ -312,7 +316,21 @@ class StreamflowModel:
         n_epochs = epochs or cfg.epochs
         best, best_state, bad = -np.inf, None, 0
         self.history = []
-        for ep in range(n_epochs):
+        start_ep = 0
+        ckpt = Path(checkpoint) if checkpoint else None
+        if ckpt is not None and ckpt.exists():
+            st_ = torch.load(ckpt, map_location=dev, weights_only=False)
+            self.net.load_state_dict(st_["net"])
+            opt.load_state_dict(st_["opt"])
+            sched.load_state_dict(st_["sched"])
+            best, bad, start_ep, self.history = st_["best"], st_["bad"], st_["epoch"], st_["history"]
+            best_state = st_["best_state"]
+            rng = np.random.default_rng(st_["rng_seed"])
+            if progress:
+                progress(start_ep, n_epochs, float(best))
+            if st_.get("stopped"):
+                start_ep = n_epochs
+        for ep in range(start_ep, n_epochs):
             t0 = time.time()
             self.net.train()
             order = rng.permutation(len(idx))
@@ -344,11 +362,19 @@ class StreamflowModel:
                 progress(ep + 1, n_epochs, score)
             if score > best + 1e-4:
                 best, bad = score, 0
-                best_state = copy.deepcopy(self.net.state_dict())
+                best_state = {k: v.detach().cpu().clone() for k, v in self.net.state_dict().items()}
             else:
                 bad += 1
-                if bad >= cfg.patience:
-                    break
+            stop = bad >= cfg.patience
+            if ckpt is not None:
+                tmp = ckpt.with_suffix(".tmp")
+                torch.save({"net": self.net.state_dict(), "opt": opt.state_dict(), "sched": sched.state_dict(),
+                            "best": best, "bad": bad, "epoch": ep + 1, "history": self.history,
+                            "best_state": best_state, "rng_seed": int(rng.integers(0, 2**31 - 1)),
+                            "stopped": stop}, tmp)
+                tmp.replace(ckpt)
+            if stop:
+                break
         if best_state is not None:
             self.net.load_state_dict(best_state)
         self.net.to("cpu")

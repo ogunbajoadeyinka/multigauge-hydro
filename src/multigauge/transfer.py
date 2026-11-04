@@ -36,6 +36,7 @@ def pretrain(
     train_period: tuple = ("1980-10-01", "1995-09-30"),
     val_period: tuple = ("1995-10-01", "2000-09-30"),
     progress: Optional[Callable[[int, int, float], None]] = None,
+    checkpoint=None,
 ) -> StreamflowModel:
     """Train one model on many basins. Periods default to the CAMELS-US
     convention used by Kratzert et al. (2019)."""
@@ -43,7 +44,7 @@ def pretrain(
     train = [period_mask(b.dates, train_period) for b in basins]
     val = [period_mask(b.dates, val_period) for b in basins]
     model = StreamflowModel.new(basins, train, cfg)
-    model.fit(basins, train, val, progress=progress)
+    model.fit(basins, train, val, progress=progress, checkpoint=checkpoint)
     model.info.update(
         trained_on=len(basins), train_period=list(map(str, train_period)), val_period=list(map(str, val_period))
     )
