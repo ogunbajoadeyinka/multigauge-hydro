@@ -129,6 +129,7 @@ def prepare_usgs_basin(site: str, start: str, end: str, folder, name: Optional[s
     good = rain.notna().mean() >= min_coverage_days
     rain = rain.loc[:, good].iloc[:, :max_gauges]
     st = st.loc[rain.columns]
+    st.index.name = "id"
     if rain.shape[1] < 2:
         raise RuntimeError(f"Fewer than two usable rain gauges for basin {site}.")
     rain.to_csv(folder / "rainfall.csv", date_format="%Y-%m-%d")

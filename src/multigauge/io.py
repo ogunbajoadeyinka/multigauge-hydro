@@ -124,7 +124,11 @@ def load_rainfall(src: PathOrFile) -> pd.DataFrame:
 def load_stations(src: PathOrFile) -> pd.DataFrame:
     """Gauge locations: index = gauge id (str), columns lat, lon."""
     df = _read_csv(src, "stations")
-    id_col = _find_column(df.columns, ID_NAMES, "station id")
+    id_col = _find_column(df.columns, ID_NAMES, "station id", required=False)
+    if id_col is None and str(df.columns[0]).lower().startswith("unnamed"):
+        id_col = df.columns[0]  # a CSV written from an index without a name
+    if id_col is None:
+        id_col = _find_column(df.columns, ID_NAMES, "station id")
     lat_col = _find_column(df.columns, LAT_NAMES, "latitude")
     lon_col = _find_column(df.columns, LON_NAMES, "longitude")
     out = pd.DataFrame(

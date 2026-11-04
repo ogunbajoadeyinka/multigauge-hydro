@@ -462,3 +462,35 @@ def test_camels_reader_with_two_folder_copies(tmp_path):
     assert list_basins(tmp_path) == ["07000001", "07000002"]
     got = load_camels(tmp_path, ["07000001", "07000002", "09999999"])   # last one is absent
     assert [b.basin_id for b in got] == ["07000001", "07000002"]
+
+
+def test_stations_with_unnamed_id_column(tmp_path):
+    st = load_stations(io.StringIO(",lat,lon\nUSC001,35.0,-98.0\nUSC002,35.1,-97.9\n"))
+    assert list(st.index) == ["USC001", "USC002"]
+
+
+def test_prepare_writes_named_station_ids(tmp_path, monkeypatch):
+    """prepare_usgs_basin end to end with all four web services mocked."""
+    from shapely.geometry import box as _box
+
+    from multigauge import download, prepare
+
+    geom = _box(-98.4, 34.8, -97.6, 35.2)
+    dates = pd.date_range("2000-10-01", "2004-09-30")
+    rng = np.random.default_rng(0)
+    monkeypatch.setattr(prepare, "nldi_basin", lambda site: (geom, (34.95, -97.6)))
+    monkeypatch.setattr(download, "usgs_daily_flow", lambda *a, **k: pd.Series(rng.gamma(2, 20, len(dates)), index=dates, name="flow"))
+    forc = pd.DataFrame({"prcp": rng.exponential(2, len(dates)), "srad": 250.0, "tmax": 25.0, "tmin": 10.0, "vp": 1200.0}, index=dates)
+    monkeypatch.setattr(download, "daymet_basin", lambda *a, **k: forc)
+    ids = ["USC00000001", "USC00000002", "USC00000003"]
+    st = pd.DataFrame({"lat": [34.9, 35.0, 35.1], "lon": [-98.2, -98.0, -97.8]}, index=pd.Index(ids))   # index name lost
+    rain = pd.DataFrame(rng.exponential(2, (len(dates), 3)), index=dates, columns=ids)
+    monkeypatch.setattr(download, "ghcn_daily_precip", lambda *a, **k: (rain, st))
+    inv = "\n".join(f"{i:<11}{la:>9.4f}{lo:>10.4f} PRCP 1990 2024" for i, la, lo in zip(ids, st["lat"], st["lon"]))
+    cache = tmp_path / "home" / ".cache" / "multigauge"
+    cache.mkdir(parents=True)
+    (cache / "ghcnd-inventory.txt").write_text(inv)
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    d = prepare.prepare_usgs_basin("07000000", "2000-10-01", "2004-09-30", tmp_path / "b", progress=lambda m: None)
+    assert d.station_ids == ids and d.has_forcings and d.area_km2 > 0
+    assert (tmp_path / "b" / "stations.csv").read_text().startswith("id,")

@@ -201,6 +201,7 @@ def _cmd_ghcn(a):
     out = Path(a.output)
     out.mkdir(parents=True, exist_ok=True)
     rain.to_csv(out / "rainfall.csv", date_format="%Y-%m-%d")
+    st.index.name = "id"
     st.to_csv(out / "stations.csv")
     print(f"{rain.shape[1]} stations, {len(rain)} days written to {out}")
 
