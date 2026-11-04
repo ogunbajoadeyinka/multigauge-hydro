@@ -1,0 +1,8 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.15.0+cpu
+numpy>=1.23
+pandas>=1.5
+shapely>=2.0
+plotly>=5.24
+pyshp>=2.3
+streamlit>=1.50
