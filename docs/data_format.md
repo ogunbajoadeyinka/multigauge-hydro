@@ -1,7 +1,7 @@
 # Input data format
 
 multigauge needs three files. Two more are optional. Put them in one folder
-with these names to use `multigauge run <folder>` or `BasinData.from_folder()`,
+with these names to use `multigauge study <folder>` or `BasinData.from_folder()`,
 or upload them one by one in the web app.
 
 | File | Required | Contents |
@@ -9,11 +9,14 @@ or upload them one by one in the web app.
 | `rainfall.csv` | yes | `date`, then one column per gauge, daily totals in **mm/day** |
 | `stations.csv` | yes | `id`, `lat`, `lon` for every gauge (decimal degrees, WGS84) |
 | `streamflow.csv` | yes | `date`, `flow`: daily mean flow at the basin outlet |
-| `boundary.geojson` or `boundary.zip` | no | watershed polygon (GeoJSON, or a zipped shapefile), WGS84 |
-| `extra.csv` | no | `date` plus any basin-wide daily inputs (temperature, PET, ...) |
-| `basin.json` | no | `{"name": ..., "flow_unit": "m3/s", "outlet_lat": ..., "outlet_lon": ...}` |
+| `forcings.csv` | yes, for the pre-trained model | basin-average Daymet weather: `date, prcp, srad, tmax, tmin, vp` (mm/day, W/m², °C, °C, Pa). Create it with `multigauge daymet my_basin/` |
+| `boundary.geojson` or `boundary.zip` | recommended | watershed polygon (GeoJSON, or a zipped shapefile), WGS84; gives the area and Voronoi weights |
+| `basin.json` | no | `{"name": ..., "flow_unit": "m3/s", "area_km2": ..., "outlet_lat": ..., "outlet_lon": ...}` |
+| `subbasins/` | no (phase 2) | `subbasins.geojson` (properties `id`, `downstream`, optional `distance_km`) and one `<id>.csv` of forcings per sub-basin |
 
 Run `multigauge demo example/` to write a complete example folder.
+
+The gridded forcings are what the pre-trained model needs; the rain gauges are what the study tests.
 
 ## Rules
 
@@ -24,8 +27,9 @@ Run `multigauge demo example/` to write a complete example folder.
 - **Gauge ids** in the `rainfall.csv` header must match `id` in `stations.csv`.
   Column names are matched case-insensitively, and common alternatives are
   accepted (`Date`, `station_id`, `Latitude`, `Longitude`, `discharge`, ...).
-- **Flow units** can be anything consistent (m³/s, ft³/s, mm/day). NSE and KGE
-  do not depend on the unit; RMSE is reported in the same unit.
+- **Flow units**: m³/s (default) or ft³/s, set in `basin.json`. Flow is converted to
+  specific discharge (mm/day) with the basin area for modelling, and converted back for results.
+- **Basin area** comes from the boundary, or from `area_km2` in `basin.json`.
 - **Coordinates** must be longitude/latitude in degrees. Re-project projected
   shapefiles to EPSG:4326 first (in QGIS: *Export → Save Features As → CRS 4326*).
 - **Record length**: at least 3 years of overlapping rainfall and streamflow;
@@ -52,7 +56,12 @@ basin edge.
 pip install "multigauge-hydro[download]"
 multigauge usgs 07316000 2010-01-01 2020-12-31 -o my_basin/streamflow.csv
 multigauge ghcn USC00346139,USC00341750 2010-01-01 2020-12-31 -o my_basin/
+multigauge daymet my_basin/
 ```
+
+`multigauge daymet` averages Daymet over up to 16 points spread inside the boundary
+(Daymet single-pixel service, https://daymet.ornl.gov). Daymet omits 31 December in
+leap years; multigauge fills it from 30 December.
 
 The first uses the USGS Water Data API (daily mean discharge, converted to m³/s).
 The second uses NOAA's NCEI Access Data Service for GHCN-Daily precipitation and

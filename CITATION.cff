@@ -1,11 +1,11 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
-title: "multigauge: comparing rain gauge input strategies for LSTM streamflow prediction"
+title: "multigauge: the value of local rain gauges for pre-trained deep-learning streamflow models"
 authors:
   - family-names: Ogunbajo
     given-names: Adeyinka
     affiliation: "Oklahoma State University"
-version: 0.1.0
+version: 0.2.0
 date-released: 2026-11-03
 license: MIT
 repository-code: "https://github.com/ogunbajoadeyinka/multigauge-hydro"

@@ -18,6 +18,7 @@ are not downloaded here: export those records as CSV and load them with
 from __future__ import annotations
 
 import os
+import io
 from typing import Iterable, Optional
 
 import pandas as pd
@@ -134,3 +135,159 @@ def ghcn_daily_precip(
     if missing:
         st.attrs["missing"] = missing
     return rain, st
+
+
+# =========================================================================
+# Daymet (gridded daily weather, North America, 1 km)
+# =========================================================================
+DAYMET_URL = "https://daymet.ornl.gov/single-pixel/api/data"
+OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
+
+
+def sample_points(geom, n: int = 16, seed: int = 0) -> list:
+    """Up to ``n`` (lat, lon) points spread evenly inside a lon/lat polygon."""
+    import numpy as np
+    from shapely.geometry import Point
+
+    minx, miny, maxx, maxy = geom.bounds
+    k = int(np.ceil(np.sqrt(n * 2)))
+    pts = []
+    for fx in np.linspace(0.05, 0.95, k):
+        for fy in np.linspace(0.05, 0.95, k):
+            p = Point(minx + fx * (maxx - minx), miny + fy * (maxy - miny))
+            if geom.contains(p):
+                pts.append((p.y, p.x))
+    if not pts:
+        c = geom.representative_point()
+        pts = [(c.y, c.x)]
+    if len(pts) > n:
+        idx = np.linspace(0, len(pts) - 1, n).round().astype(int)
+        pts = [pts[i] for i in idx]
+    return pts
+
+
+def _parse_daymet(text: str) -> pd.DataFrame:
+    lines = text.splitlines()
+    start = next(i for i, l in enumerate(lines) if l.lower().startswith("year,yday"))
+    df = pd.read_csv(io.StringIO("\n".join(lines[start:])))
+    df.columns = [c.split(" ")[0].strip() for c in df.columns]
+    dates = pd.to_datetime(df["year"].astype(str), format="%Y") + pd.to_timedelta(df["yday"] - 1, unit="D")
+    df.index = pd.DatetimeIndex(dates, name="date")
+    out = df[["prcp", "srad", "tmax", "tmin", "vp"]].astype(float)
+    # Daymet drops 31 December in leap years: fill it from 30 December
+    end = out.index.max()
+    if end.month == 12 and end.day == 30 and end.is_leap_year:
+        end = end + pd.Timedelta(days=1)
+    full = pd.date_range(out.index.min(), end, freq="D", name="date")
+    return out.reindex(full).ffill(limit=1)
+
+
+def daymet_point(lat: float, lon: float, start: str, end: str, timeout: int = 120) -> pd.DataFrame:
+    s = _session()
+    r = s.get(DAYMET_URL, params={
+        "lat": f"{lat:.5f}", "lon": f"{lon:.5f}", "vars": "prcp,srad,tmax,tmin,vp",
+        "start": str(pd.Timestamp(start).date()), "end": str(pd.Timestamp(end).date()),
+    }, timeout=timeout)
+    r.raise_for_status()
+    return _parse_daymet(r.text)
+
+
+def daymet_basin(geom, start: str, end: str, n_points: int = 16, progress=None) -> pd.DataFrame:
+    """Basin-average Daymet forcings (mean over points sampled inside ``geom``)."""
+    pts = sample_points(geom, n_points)
+    frames = []
+    for i, (la, lo) in enumerate(pts):
+        frames.append(daymet_point(la, lo, start, end))
+        if progress:
+            progress(i + 1, len(pts))
+    return sum(frames) / len(frames)
+
+
+# =========================================================================
+# Open-Meteo (weather forecasts, no key needed)
+# =========================================================================
+def daylight_seconds(lat: float, dates: pd.DatetimeIndex):
+    import numpy as np
+
+    doy = dates.dayofyear.values
+    delta = 0.409 * np.sin(2 * np.pi * doy / 365 - 1.39)
+    ws = np.arccos(np.clip(-np.tan(np.radians(lat)) * np.tan(delta), -1, 1))
+    return 24 * 3600 * ws / np.pi
+
+
+def openmeteo_forecast(geom_or_point, days: int = 7, past_days: int = 0, n_points: int = 6, timeout: int = 60) -> pd.DataFrame:
+    """Daily weather forecast averaged over a basin, in multigauge's units
+    (prcp mm/day, srad W/m2 daylight mean, tmax/tmin degC, vp estimated).
+
+    ``past_days`` (up to 92) also returns recent analysed days, useful to
+    bridge the gap between the latest Daymet day and today.
+    """
+    import numpy as np
+
+    from .forecast import vp_from_tmin
+
+    if isinstance(geom_or_point, tuple):
+        pts = [geom_or_point]
+    else:
+        pts = sample_points(geom_or_point, n_points)
+    s = _session()
+    r = s.get(OPEN_METEO_URL, params={
+        "latitude": ",".join(f"{p[0]:.4f}" for p in pts),
+        "longitude": ",".join(f"{p[1]:.4f}" for p in pts),
+        "daily": "precipitation_sum,temperature_2m_max,temperature_2m_min,shortwave_radiation_sum",
+        "timezone": "UTC", "forecast_days": days, "past_days": past_days,
+    }, timeout=timeout)
+    r.raise_for_status()
+    js = r.json()
+    js = js if isinstance(js, list) else [js]
+    frames = []
+    for item in js:
+        d = item["daily"]
+        frames.append(pd.DataFrame({
+            "prcp": d["precipitation_sum"], "tmax": d["temperature_2m_max"],
+            "tmin": d["temperature_2m_min"], "rad_mj": d["shortwave_radiation_sum"],
+        }, index=pd.DatetimeIndex(pd.to_datetime(d["time"]), name="date")).astype(float))
+    df = sum(frames) / len(frames)
+    lat = float(np.mean([p[0] for p in pts]))
+    df["srad"] = df.pop("rad_mj") * 1e6 / daylight_seconds(lat, df.index)
+    df["vp"] = vp_from_tmin(df["tmin"])
+    return df[["prcp", "srad", "tmax", "tmin", "vp"]]
+
+
+def usgs_recent_flow(site: str, days: int = 400, units: str = "m3/s") -> pd.Series:
+    """The most recent ``days`` of daily mean discharge (provisional data)."""
+    end = pd.Timestamp.utcnow().normalize().tz_localize(None)
+    return usgs_daily_flow(site, str((end - pd.Timedelta(days=days)).date()), str(end.date()), units=units)
+
+
+OPEN_METEO_ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
+
+
+def openmeteo_archive(geom_or_point, start: str, end: str, n_points: int = 6, timeout: int = 120) -> pd.DataFrame:
+    """Historical daily weather (ERA5-based, about 5 days behind real time),
+    in the same units as ``openmeteo_forecast``."""
+    import numpy as np
+
+    from .forecast import vp_from_tmin
+
+    pts = [geom_or_point] if isinstance(geom_or_point, tuple) else sample_points(geom_or_point, n_points)
+    s = _session()
+    r = s.get(OPEN_METEO_ARCHIVE_URL, params={
+        "latitude": ",".join(f"{p[0]:.4f}" for p in pts),
+        "longitude": ",".join(f"{p[1]:.4f}" for p in pts),
+        "start_date": str(pd.Timestamp(start).date()), "end_date": str(pd.Timestamp(end).date()),
+        "daily": "precipitation_sum,temperature_2m_max,temperature_2m_min,shortwave_radiation_sum",
+        "timezone": "UTC",
+    }, timeout=timeout)
+    r.raise_for_status()
+    js = r.json()
+    js = js if isinstance(js, list) else [js]
+    frames = [pd.DataFrame({
+        "prcp": i["daily"]["precipitation_sum"], "tmax": i["daily"]["temperature_2m_max"],
+        "tmin": i["daily"]["temperature_2m_min"], "rad_mj": i["daily"]["shortwave_radiation_sum"],
+    }, index=pd.DatetimeIndex(pd.to_datetime(i["daily"]["time"]), name="date")).astype(float) for i in js]
+    df = sum(frames) / len(frames)
+    lat = float(np.mean([p[0] for p in pts]))
+    df["srad"] = df.pop("rad_mj") * 1e6 / daylight_seconds(lat, df.index)
+    df["vp"] = vp_from_tmin(df["tmin"])
+    return df[["prcp", "srad", "tmax", "tmin", "vp"]]

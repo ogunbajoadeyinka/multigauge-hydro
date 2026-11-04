@@ -2,6 +2,7 @@
   "name": "Synthetic demo basin",
   "flow_unit": "m3/s",
   "rainfall_unit": "mm/day",
+  "area_km2": 5296.0,
   "outlet_lat": 34.95987022420073,
   "outlet_lon": -97.37799016568273
 }

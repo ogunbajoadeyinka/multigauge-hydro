@@ -1,0 +1,95 @@
+{
+ "format": "multigauge-model-1",
+ "config": {
+  "hidden_size": 64,
+  "dropout": 0.3,
+  "lookback": 180,
+  "head": "cmal",
+  "n_mixtures": 3,
+  "learning_rate": 0.001,
+  "batch_size": 256,
+  "epochs": 14,
+  "patience": 4,
+  "samples_per_epoch": 40000,
+  "max_val_basins": 60,
+  "seed": 0,
+  "threads": null
+ },
+ "scaler": {
+  "dyn_mean": [
+   3.151438452413539,
+   195.89294871794883,
+   18.786884296012413,
+   6.536615110867829,
+   1207.9986312619765
+  ],
+  "dyn_std": [
+   13.15360055399083,
+   73.68363652595009,
+   9.837584450810493,
+   10.498314105777137,
+   863.4402669478961
+  ],
+  "stat_mean": [
+   3.2705158118594246,
+   38.64521903756728,
+   3.158177325770912,
+   3.051925981315534,
+   1.113732075582652,
+   12.663759534519851,
+   0.025110810714849795,
+   24.29166096225308,
+   321.84575591629175
+  ],
+  "stat_std": [
+   0.24162699952979733,
+   4.632563390453248,
+   1.1792338716822386,
+   0.47383733161732283,
+   0.4670709145914262,
+   3.9587135250336347,
+   0.03273150842569827,
+   1.1566109299597171,
+   2.146603802447303
+  ],
+  "q_mean": 1.8695842172930637,
+  "q_std": 4.07886525222782,
+  "extra_cols": [],
+  "extra_mean": [],
+  "extra_std": []
+ },
+ "n_extra": 0,
+ "dynamic": [
+  "prcp",
+  "srad",
+  "tmax",
+  "tmin",
+  "vp"
+ ],
+ "static": [
+  "log_area",
+  "lat",
+  "p_mean",
+  "pet_mean",
+  "aridity",
+  "t_mean",
+  "frac_snow",
+  "high_prec_freq",
+  "low_prec_freq"
+ ],
+ "info": {
+  "n_basins": 60,
+  "best_val_score": 0.7486969805603602,
+  "trained_on": 60,
+  "train_period": [
+   "2000-01-01",
+   "2009-12-31"
+  ],
+  "val_period": [
+   "2010-01-01",
+   "2013-12-31"
+  ],
+  "source": "synthetic",
+  "description": "Demo model trained on 60 synthetic basins. For the built-in demo only; not for real basins."
+ }
+}

@@ -56,3 +56,49 @@ ALL = {"NSE": nse, "KGE": kge, "RMSE": rmse, "PBIAS": pbias, "PeakError": peak_e
 
 def evaluate(obs, sim) -> dict:
     return {name: fn(obs, sim) for name, fn in ALL.items()}
+
+
+# ------------------------------------------------------------ probabilistic
+def pinball(obs, q, level: float) -> float:
+    o, s = _clean(obs, q)
+    if not len(o):
+        return float("nan")
+    d = o - s
+    return float(np.mean(np.maximum(level * d, (level - 1) * d)))
+
+
+def crps_from_quantiles(obs, quantiles: dict) -> float:
+    """CRPS approximated as twice the mean pinball loss over quantile levels.
+
+    ``quantiles`` maps level (0-1) -> array of predicted quantiles. With
+    evenly spaced levels this converges to the CRPS (Gneiting & Raftery, 2007).
+    """
+    if not quantiles:
+        return float("nan")
+    return float(2 * np.mean([pinball(obs, q, lv) for lv, q in quantiles.items()]))
+
+
+def coverage(obs, lower, upper) -> float:
+    """Share of observations inside [lower, upper] (target: nominal level)."""
+    obs, lower, upper = (np.asarray(a, dtype=float) for a in (obs, lower, upper))
+    ok = np.isfinite(obs) & np.isfinite(lower) & np.isfinite(upper)
+    return float(np.mean((obs[ok] >= lower[ok]) & (obs[ok] <= upper[ok]))) if ok.any() else float("nan")
+
+
+def interval_width(lower, upper) -> float:
+    lower, upper = np.asarray(lower, float), np.asarray(upper, float)
+    ok = np.isfinite(lower) & np.isfinite(upper)
+    return float(np.mean(upper[ok] - lower[ok])) if ok.any() else float("nan")
+
+
+def evaluate_probabilistic(obs, pred) -> dict:
+    """Deterministic metrics on ``pred['mean']`` plus interval metrics if
+    quantile columns (q05 ... q95) are present."""
+    out = evaluate(obs, pred["mean"])
+    qcols = {int(c[1:]) / 100: pred[c].to_numpy() for c in pred.columns if c.startswith("q") and c[1:].isdigit()}
+    if qcols:
+        out["CRPS"] = crps_from_quantiles(np.asarray(obs, float), qcols)
+        if 0.05 in qcols and 0.95 in qcols:
+            out["Coverage90"] = coverage(obs, qcols[0.05], qcols[0.95])
+            out["Width90"] = interval_width(qcols[0.05], qcols[0.95])
+    return out

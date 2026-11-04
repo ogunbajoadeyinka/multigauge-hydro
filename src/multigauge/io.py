@@ -243,6 +243,10 @@ class BasinData:
     outlet: Optional[tuple] = None  # (lat, lon), optional
     name: str = "basin"
     notes: list = field(default_factory=list)
+    forcings: Optional[pd.DataFrame] = None  # gridded Daymet-style forcings (features.DYNAMIC)
+    area_km2: Optional[float] = None
+    flow_unit: str = "m3/s"
+    meta: dict = field(default_factory=dict)
 
     def __post_init__(self):
         self._validate_and_align()
@@ -264,9 +268,10 @@ class BasinData:
 
         start = max(self.rainfall.index.min(), self.streamflow.index.min())
         end = min(self.rainfall.index.max(), self.streamflow.index.max())
-        if self.extra is not None:
-            start = max(start, self.extra.index.min())
-            end = min(end, self.extra.index.max())
+        for other in (self.extra, self.forcings):
+            if other is not None:
+                start = max(start, other.index.min())
+                end = min(end, other.index.max())
         if start >= end:
             raise DataError("The rainfall and streamflow files do not share any dates.")
 
@@ -275,6 +280,12 @@ class BasinData:
         self.streamflow = self.streamflow.reindex(idx)
         if self.extra is not None:
             self.extra = self.extra.reindex(idx).interpolate(limit_direction="both")
+        if self.forcings is not None:
+            from .features import check_forcings
+
+            self.forcings = check_forcings(self.forcings.reindex(idx), "gridded forcings")
+        if self.area_km2 is None and self.boundary is not None:
+            self.area_km2 = boundary_area_km2(self.boundary)
 
         if len(idx) < 3 * 365:
             raise DataError(
@@ -308,6 +319,35 @@ class BasinData:
             }
         )
 
+    @property
+    def has_forcings(self) -> bool:
+        return self.forcings is not None
+
+    @property
+    def centroid(self) -> tuple:
+        """(lat, lon) of the basin centroid, or of the gauges if no boundary."""
+        if self.boundary is not None:
+            c = self.boundary.centroid
+            return float(c.y), float(c.x)
+        return float(self.stations["lat"].mean()), float(self.stations["lon"].mean())
+
+    def to_basin(self, gauge_inputs: Optional[pd.DataFrame] = None, basin_id: Optional[str] = None):
+        """Model-ready record: gridded forcings + specific discharge (+ gauge inputs)."""
+        from .basin import Basin
+        from .features import flow_to_mm_per_day
+
+        if self.forcings is None:
+            raise DataError(
+                "Gridded forcings are needed for the pre-trained model. Add forcings.csv "
+                "(Daymet: prcp, srad, tmax, tmin, vp) or download them with `multigauge daymet`."
+            )
+        if not self.area_km2:
+            raise DataError("The basin area is unknown: add a boundary file or area_km2 in basin.json.")
+        lat, lon = self.outlet if self.outlet is not None else self.centroid
+        q_mm = flow_to_mm_per_day(self.streamflow, self.area_km2, self.flow_unit)
+        return Basin(basin_id or self.name, self.forcings, q_mm, float(self.area_km2), lat, lon,
+                     extra=gauge_inputs, meta={"source": "user"})
+
     @classmethod
     def from_files(
         cls,
@@ -319,6 +359,9 @@ class BasinData:
         outlet: Optional[tuple] = None,
         name: str = "basin",
         boundary_filename: Optional[str] = None,
+        forcings: Optional[PathOrFile] = None,
+        area_km2: Optional[float] = None,
+        flow_unit: str = "m3/s",
     ) -> "BasinData":
         return cls(
             rainfall=load_rainfall(rainfall),
@@ -328,6 +371,9 @@ class BasinData:
             extra=load_extra(extra) if extra is not None else None,
             outlet=outlet,
             name=name,
+            forcings=load_extra(forcings) if forcings is not None else None,
+            area_km2=area_km2,
+            flow_unit=flow_unit,
         )
 
     @classmethod
@@ -345,13 +391,15 @@ class BasinData:
         for req in ("rainfall.csv", "stations.csv", "streamflow.csv"):
             if not (folder / req).exists():
                 raise DataError(f"'{req}' was not found in {folder}.")
-        outlet = None
+        outlet, area, unit = None, None, "m3/s"
         meta = folder / "basin.json"
         if meta.exists():
             m = json.loads(meta.read_text())
             if "outlet_lat" in m and "outlet_lon" in m:
                 outlet = (float(m["outlet_lat"]), float(m["outlet_lon"]))
             name = name or m.get("name")
+            area = m.get("area_km2")
+            unit = m.get("flow_unit", unit)
         return cls.from_files(
             folder / "rainfall.csv",
             folder / "stations.csv",
@@ -360,4 +408,15 @@ class BasinData:
             extra=opt("extra.csv"),
             outlet=outlet,
             name=name or folder.name,
+            forcings=opt("forcings.csv"),
+            area_km2=float(area) if area else None,
+            flow_unit=unit,
         )
+
+
+def boundary_area_km2(geom: BaseGeometry) -> float:
+    """Area of a lon/lat polygon in km2 (local equal-distance projection)."""
+    from .spatial import LocalProjection
+
+    c = geom.centroid
+    return float(LocalProjection(c.x, c.y).geom_to_km(geom).area)
