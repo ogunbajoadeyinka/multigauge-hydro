@@ -439,3 +439,26 @@ def test_training_resumes_from_checkpoint(tmp_path, pretrain_set):
     assert ck.exists() and len(a.history) == 1
     b = StreamflowModel.new(pretrain_set, tr, cfg).fit(pretrain_set, tr, va, epochs=2, checkpoint=ck)
     assert [h["epoch"] for h in b.history] == [1, 2]   # resumed: epoch 1 was not repeated
+
+
+def test_camels_reader_with_two_folder_copies(tmp_path):
+    """The CAMELS zip unpacks into two folders; the loader must find a basin in either."""
+    from multigauge.camels import list_basins, load_camels
+
+    def write(root, bid, huc="11"):
+        (root / "basin_mean_forcing" / "daymet" / huc).mkdir(parents=True, exist_ok=True)
+        (root / "usgs_streamflow" / huc).mkdir(parents=True, exist_ok=True)
+        dates = pd.date_range("2000-01-01", periods=800)
+        lines = ["35.0", "400", "1000000000",
+                 "Year Mnth Day Hr\tdayl(s)\tprcp(mm/day)\tsrad(W/m2)\tswe(mm)\ttmax(C)\ttmin(C)\tvp(Pa)"]
+        lines += [f"{d.year} {d.month:02d} {d.day:02d} 12\t40000\t1.0\t250\t0\t25\t12\t1300" for d in dates]
+        (root / "basin_mean_forcing" / "daymet" / huc / f"{bid}_lump_cida_forcing_leap.txt").write_text("\n".join(lines))
+        q = [f"{bid} {d.year} {d.month:02d} {d.day:02d} 50.00 A" for d in dates]
+        (root / "usgs_streamflow" / huc / f"{bid}_streamflow_qc.txt").write_text("\n".join(q))
+
+    write(tmp_path / "basin_dataset_public", "07000001")          # older, incomplete copy
+    write(tmp_path / "basin_dataset_public_v1p2", "07000001")
+    write(tmp_path / "basin_dataset_public_v1p2", "07000002")
+    assert list_basins(tmp_path) == ["07000001", "07000002"]
+    got = load_camels(tmp_path, ["07000001", "07000002", "09999999"])   # last one is absent
+    assert [b.basin_id for b in got] == ["07000001", "07000002"]

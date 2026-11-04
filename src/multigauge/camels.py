@@ -35,13 +35,44 @@ _COLS = {
 }
 
 
-def _root(path: Union[str, Path]) -> Path:
-    path = Path(path)
-    if (path / "basin_mean_forcing").exists():
-        return path
-    for p in path.rglob("basin_mean_forcing"):
-        return p.parent
-    raise FileNotFoundError(f"No 'basin_mean_forcing' folder found under {path}.")
+_INDEX_CACHE: dict = {}
+
+
+def _index(path) -> dict:
+    """Map basin id -> {"forcing": file, "flow": file} over the whole tree.
+
+    The CAMELS archive unpacks into more than one folder (for example
+    ``basin_dataset_public`` and ``basin_dataset_public_v1p2``), and not
+    every folder holds every basin, so files are found wherever they are;
+    copies under a ``v1p2`` folder win when a basin appears twice.
+    """
+    key = str(Path(path).resolve())
+    if key in _INDEX_CACHE:
+        return _INDEX_CACHE[key]
+    idx: dict = {}
+
+    def add(kind, f, bid):
+        cur = idx.setdefault(bid, {}).get(kind)
+        if cur is None or ("v1p2" in str(f) and "v1p2" not in str(cur)):
+            idx[bid][kind] = f
+
+    for f in Path(path).rglob("*_lump_cida_forcing_leap.txt"):
+        if f.parent.parent.name == "daymet":
+            add("forcing", f, f.name.split("_")[0])
+    for f in Path(path).rglob("*_streamflow_qc.txt"):
+        add("flow", f, f.name.split("_")[0])
+    if not idx:
+        raise FileNotFoundError(f"No CAMELS Daymet forcing files found under {path}.")
+    _INDEX_CACHE[key] = idx
+    return idx
+
+
+def _file(path, basin_id: str, kind: str) -> Path:
+    f = _index(path).get(basin_id, {}).get(kind)
+    if f is None:
+        what = "Daymet forcing" if kind == "forcing" else "streamflow"
+        raise FileNotFoundError(f"No CAMELS {what} file for basin {basin_id} under {path}.")
+    return f
 
 
 def _attr_root(path: Path) -> Optional[Path]:
@@ -54,15 +85,12 @@ def _attr_root(path: Path) -> Optional[Path]:
 
 
 def list_basins(path) -> list:
-    root = _root(path)
-    files = sorted((root / "basin_mean_forcing" / "daymet").glob("*/*_lump_cida_forcing_leap.txt"))
-    return [f.name.split("_")[0] for f in files]
+    return sorted(b for b, v in _index(path).items() if "forcing" in v and "flow" in v)
 
 
 def read_forcing(path, basin_id: str) -> tuple[pd.DataFrame, float, float]:
     """Return (forcings, latitude, header area in km2)."""
-    root = _root(path)
-    f = next((root / "basin_mean_forcing" / "daymet").glob(f"*/{basin_id}_lump_cida_forcing_leap.txt"))
+    f = _file(path, basin_id, "forcing")
     with open(f) as fh:
         lat = float(fh.readline())
         fh.readline()  # elevation
@@ -76,8 +104,7 @@ def read_forcing(path, basin_id: str) -> tuple[pd.DataFrame, float, float]:
 
 def read_streamflow(path, basin_id: str) -> pd.Series:
     """Observed discharge in ft3/s, NaN where missing."""
-    root = _root(path)
-    f = next((root / "usgs_streamflow").glob(f"*/{basin_id}_streamflow_qc.txt"))
+    f = _file(path, basin_id, "flow")
     df = pd.read_csv(f, sep=r"\s+", header=None, names=["id", "y", "m", "d", "q", "flag"], dtype={"id": str})
     q = df["q"].astype(float).where(df["q"] >= 0)
     q.index = pd.DatetimeIndex(pd.to_datetime(dict(year=df["y"], month=df["m"], day=df["d"])), name="date")
@@ -113,9 +140,16 @@ def load_camels(path, basin_ids: Optional[Iterable[str]] = None, progress=None) 
     """
     ids = list(basin_ids) if basin_ids is not None else list_basins(path)
     topo = read_topo(path)
-    out = []
+    out, missing = [], []
     for i, b in enumerate(ids):
-        out.append(load_basin(path, b, topo))
+        try:
+            out.append(load_basin(path, b, topo))
+        except FileNotFoundError:
+            missing.append(b)  # reported below; one absent basin should not stop pre-training
         if progress:
             progress(i + 1, len(ids), b)
+    if missing:
+        print(f"\nWarning: {len(missing)} basin(s) not found and skipped: {', '.join(missing[:20])}")
+    if not out:
+        raise FileNotFoundError(f"None of the requested basins were found under {path}.")
     return out
