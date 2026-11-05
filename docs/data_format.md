@@ -24,6 +24,12 @@ The gridded forcings are what the pre-trained model needs; the rain gauges are w
   Gaps in the date sequence are allowed; they are treated as missing.
 - **Missing values**: leave the cell blank. Negative numbers (such as `-999`) are
   also treated as missing.
+- **Day convention**: Daymet assigns rain to the day it fell. Many gauges, including NOAA
+  cooperative observers who read the gauge at about 7 am, report it under the next day.
+  multigauge compares each gauge with the Daymet precipitation and moves it one day earlier
+  when that clearly matches better (the shift is listed as `day_shift` in the results and noted
+  in the report). To set it yourself, add a `day_shift` column to `stations.csv`
+  (`-1` = move one day earlier, `0` = leave as is; blank = detect).
 - **Gauge ids** in the `rainfall.csv` header must match `id` in `stations.csv`.
   Column names are matched case-insensitively, and common alternatives are
   accepted (`Date`, `station_id`, `Latitude`, `Longitude`, `discharge`, ...).
