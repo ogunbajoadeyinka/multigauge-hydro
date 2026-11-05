@@ -59,6 +59,12 @@ The package complements NeuralHydrology [@kratzert2022], a general research fram
 learning in hydrology, by packaging one applied question, the value of local rain gauges and of spatial
 detail for pre-trained models, as an end-to-end, reproducible workflow for researchers and practitioners.
 
+# Availability
+
+The source code, pre-trained models and validation results are at
+https://github.com/ogunbajoadeyinka/multigauge-hydro (MIT licence) and archived on Zenodo
+(https://doi.org/10.5281/zenodo.23986756). A web dashboard is available at https://multigauge-hydro.streamlit.app.
+
 # Acknowledgements
 
 <!-- Add advisor, committee, funding and data providers as appropriate. -->

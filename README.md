@@ -1,5 +1,7 @@
 # multigauge
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23986756.svg)](https://doi.org/10.5281/zenodo.23986756)
+
 **How much do local rain gauges add to a state-of-the-art AI streamflow model, and which gauges matter?**
 
 `multigauge` is an open-source Python package and web dashboard that answers this for any U.S. watershed.
@@ -145,7 +147,12 @@ Contributions and results from new basins are welcome; see [CONTRIBUTING.md](CON
 
 ## Citation
 
-See [CITATION.cff](CITATION.cff). A DOI will be added via Zenodo.
+If you use multigauge, please cite the software:
+
+> Ogunbajo, A. (2026). *multigauge: the value of local rain gauges for pre-trained deep-learning streamflow models*
+> (Version 0.2.1) [Software]. Zenodo. https://doi.org/10.5281/zenodo.23986757
+
+To cite all versions (always resolves to the latest), use https://doi.org/10.5281/zenodo.23986756. See also [CITATION.cff](CITATION.cff).
 
 ## Licence
 
