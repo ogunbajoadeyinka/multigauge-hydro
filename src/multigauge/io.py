@@ -138,6 +138,9 @@ def load_stations(src: PathOrFile) -> pd.DataFrame:
         },
         index=df[id_col].astype(str).str.strip(),
     )
+    shift_col = next((c for c in df.columns if str(c).strip().lower() == "day_shift"), None)
+    if shift_col is not None:
+        out["day_shift"] = pd.to_numeric(df[shift_col], errors="coerce").values
     out.index.name = "id"
     if out[["lat", "lon"]].isna().any().any():
         raise DataError("Every station needs a numeric latitude and longitude.")
@@ -251,9 +254,42 @@ class BasinData:
     area_km2: Optional[float] = None
     flow_unit: str = "m3/s"
     meta: dict = field(default_factory=dict)
+    align_days: bool = True  # move gauge records to the Daymet day convention
 
     def __post_init__(self):
         self._validate_and_align()
+        self._align_gauge_days()
+
+    def _align_gauge_days(self):
+        """Put every gauge on the same day convention as the gridded forcings.
+
+        A ``day_shift`` column in the stations file is used as given (blank =
+        detect). Otherwise each gauge is compared with basin-average Daymet
+        precipitation and moved by one day when that clearly matches better:
+        records from morning-read (cooperative observer) gauges are reported
+        on the day after most of the rain fell.
+        """
+        given = self.stations["day_shift"] if "day_shift" in self.stations else pd.Series(np.nan, index=self.stations.index)
+        shift = given.copy()
+        todo = [c for c in self.rainfall.columns if pd.isna(given.get(c))]
+        if todo:
+            if self.align_days and self.forcings is not None and "prcp" in self.forcings:
+                from .features import best_day_shift
+
+                shift.loc[todo] = best_day_shift(self.rainfall[todo], self.forcings["prcp"])
+            else:
+                shift.loc[todo] = 0
+        shift = shift.fillna(0).astype(int)
+        moved = shift[shift != 0]
+        for c, k in moved.items():
+            self.rainfall[c] = self.rainfall[c].shift(int(k))
+        self.stations = self.stations.assign(day_shift=shift)
+        if len(moved):
+            self.notes.append(
+                f"{len(moved)} of {len(shift)} gauges were moved one day earlier to match the Daymet day "
+                f"(morning-read gauges report rain under the next day): {', '.join(moved.index)}. "
+                "Set day_shift in stations.csv to override."
+            )
 
     # ------------------------------------------------------------------
     def _validate_and_align(self):
@@ -320,6 +356,7 @@ class BasinData:
                 "lon": self.stations["lon"],
                 "percent_missing": (r.isna().mean() * 100).round(1),
                 "mean_annual_mm": (r.mean() * 365.25).round(0),
+                "day_shift": self.stations.get("day_shift", pd.Series(0, index=r.columns)),
             }
         )
 
@@ -366,6 +403,7 @@ class BasinData:
         forcings: Optional[PathOrFile] = None,
         area_km2: Optional[float] = None,
         flow_unit: str = "m3/s",
+        align_days: bool = True,
     ) -> "BasinData":
         return cls(
             rainfall=load_rainfall(rainfall),
@@ -378,10 +416,11 @@ class BasinData:
             forcings=load_extra(forcings) if forcings is not None else None,
             area_km2=area_km2,
             flow_unit=flow_unit,
+            align_days=align_days,
         )
 
     @classmethod
-    def from_folder(cls, folder: Union[str, Path], name: Optional[str] = None) -> "BasinData":
+    def from_folder(cls, folder: Union[str, Path], name: Optional[str] = None, align_days: bool = True) -> "BasinData":
         """Load a folder containing rainfall.csv, stations.csv, streamflow.csv
         and optionally boundary.geojson / boundary.zip / extra.csv."""
         folder = Path(folder)
@@ -415,6 +454,7 @@ class BasinData:
             forcings=opt("forcings.csv"),
             area_km2=float(area) if area else None,
             flow_unit=unit,
+            align_days=align_days,
         )
 
 

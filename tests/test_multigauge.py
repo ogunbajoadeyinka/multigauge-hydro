@@ -494,3 +494,29 @@ def test_prepare_writes_named_station_ids(tmp_path, monkeypatch):
     d = prepare.prepare_usgs_basin("07000000", "2000-10-01", "2004-09-30", tmp_path / "b", progress=lambda m: None)
     assert d.station_ids == ids and d.has_forcings and d.area_km2 > 0
     assert (tmp_path / "b" / "stations.csv").read_text().startswith("id,")
+
+
+def test_gauge_day_alignment(tmp_path):
+    """Morning-read gauges (rain reported the next day) are moved back one day."""
+    import multigauge as mg
+    from multigauge.features import best_day_shift
+
+    rng = np.random.default_rng(0)
+    idx = pd.date_range("2000-01-01", periods=4 * 365, freq="D")
+    p = pd.Series(rng.gamma(0.4, 8, len(idx)) * (rng.random(len(idx)) < 0.3), index=idx)
+    rain = pd.DataFrame({"late": p.shift(1) * 1.1, "ontime": p * 0.9, "noisy": p + rng.normal(0, 0.5, len(idx)).clip(0)})
+    s = best_day_shift(rain, p)
+    assert s["late"] == -1 and s["ontime"] == 0 and s["noisy"] == 0
+
+    forc = pd.DataFrame({"prcp": p, "srad": 200.0, "tmax": 20.0, "tmin": 8.0, "vp": 900.0}, index=idx)
+    st = pd.DataFrame({"lat": [35.0, 35.1, 35.2], "lon": [-98.0, -98.1, -98.2]}, index=pd.Index(rain.columns, name="id"))
+    q = pd.Series(rng.random(len(idx)) + 1, index=idx)
+    d = mg.BasinData(rain.copy(), st, q, forcings=forc, area_km2=500.0)
+    assert d.stations.loc["late", "day_shift"] == -1
+    assert abs(d.rainfall["late"].corr(p) - 1) < 1e-9
+    assert any("moved one day" in n for n in d.notes)
+    # an explicit day_shift in the stations file is respected
+    d2 = mg.BasinData(rain.copy(), st.assign(day_shift=[0, 0, 0]), q, forcings=forc, area_km2=500.0)
+    assert d2.stations["day_shift"].eq(0).all() and not any("moved" in n for n in d2.notes)
+    d3 = mg.BasinData(rain.copy(), st, q, forcings=forc, area_km2=500.0, align_days=False)
+    assert d3.stations["day_shift"].eq(0).all()

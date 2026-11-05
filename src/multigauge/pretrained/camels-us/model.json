@@ -1,0 +1,96 @@
+{
+ "format": "multigauge-model-1",
+ "config": {
+  "hidden_size": 128,
+  "dropout": 0.4,
+  "lookback": 365,
+  "head": "cmal",
+  "n_mixtures": 3,
+  "learning_rate": 0.001,
+  "batch_size": 256,
+  "epochs": 30,
+  "patience": 6,
+  "samples_per_epoch": 200000,
+  "max_val_basins": 60,
+  "seed": 0,
+  "threads": null,
+  "device": "auto"
+ },
+ "scaler": {
+  "dyn_mean": [
+   3.328468635713192,
+   341.6611375754586,
+   16.526245708738923,
+   3.9589371731057366,
+   956.640293105289
+  ],
+  "dyn_std": [
+   7.7534245246924876,
+   133.16690824234226,
+   11.114494743580225,
+   10.290902312415074,
+   653.253816225991
+  ],
+  "stat_mean": [
+   2.420203511522359,
+   39.152504708097936,
+   3.3766395155549933,
+   2.9183352863723684,
+   1.02519634418871,
+   10.439723640838716,
+   0.14572433121746414,
+   20.787433134992167,
+   251.72808767845402
+  ],
+  "stat_std": [
+   0.545852700168538,
+   5.003759145966572,
+   1.386138705401892,
+   0.651167402119898,
+   0.5302184137941358,
+   5.196941225585073,
+   0.18294175702184773,
+   4.42313274258626,
+   33.91199312013248
+  ],
+  "q_mean": 1.5690229161469127,
+  "q_std": 3.6570769026384498,
+  "extra_cols": [],
+  "extra_mean": [],
+  "extra_std": []
+ },
+ "n_extra": 0,
+ "dynamic": [
+  "prcp",
+  "srad",
+  "tmax",
+  "tmin",
+  "vp"
+ ],
+ "static": [
+  "log_area",
+  "lat",
+  "p_mean",
+  "pet_mean",
+  "aridity",
+  "t_mean",
+  "frac_snow",
+  "high_prec_freq",
+  "low_prec_freq"
+ ],
+ "info": {
+  "n_basins": 531,
+  "best_val_score": 0.7181881427816174,
+  "trained_on": 531,
+  "train_period": [
+   "1980-10-01",
+   "1995-09-30"
+  ],
+  "val_period": [
+   "1995-10-01",
+   "2000-09-30"
+  ],
+  "source": "CAMELS-US",
+  "description": "LSTM pre-trained on 531 CAMELS-US basins (Daymet forcings, CMAL output)."
+ }
+}

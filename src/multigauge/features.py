@@ -112,3 +112,34 @@ def check_forcings(df: pd.DataFrame, what: str = "forcings") -> pd.DataFrame:
         )
     out = df[DYNAMIC].astype(float)
     return out.interpolate(limit=5, limit_direction="both")
+
+
+def gauge_timing(rain: pd.DataFrame, reference: pd.Series, max_lag: int = 1) -> pd.DataFrame:
+    """Correlation of each gauge with a reference precipitation series
+    (normally basin-average Daymet) when the gauge record is moved by
+    ``lag`` days; ``lag = -1`` moves every value one day earlier.
+
+    Most NOAA cooperative observers empty their gauge in the morning and
+    report the total under the day it was read, so most of that rain fell
+    the day before. Daymet corrects for this; raw gauge records do not.
+    """
+    ref = reference.reindex(rain.index)
+    rows = {}
+    for c in rain.columns:
+        rows[c] = {lag: rain[c].shift(lag).corr(ref) for lag in range(-max_lag, max_lag + 1)}
+    return pd.DataFrame(rows).T.rename_axis("id")
+
+
+def best_day_shift(rain: pd.DataFrame, reference: pd.Series, max_lag: int = 1,
+                   min_gain: float = 0.1, min_days: int = 365) -> pd.Series:
+    """Per-gauge day shift that best matches the reference; 0 unless another
+    shift raises the correlation by at least ``min_gain``."""
+    t = gauge_timing(rain, reference, max_lag)
+    out = {}
+    for c in rain.columns:
+        if rain[c].notna().sum() < min_days or t.loc[c].isna().all():
+            out[c] = 0
+            continue
+        best = int(t.loc[c].idxmax())
+        out[c] = best if t.loc[c, best] - t.loc[c, 0] >= min_gain else 0
+    return pd.Series(out, name="day_shift", dtype=int)
