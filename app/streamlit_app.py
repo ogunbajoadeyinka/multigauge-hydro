@@ -36,7 +36,13 @@ def demo_basin():
 
 @st.cache_resource(show_spinner="Loading the pre-trained model...")
 def pretrained(name: str):
-    return mg.load_pretrained(name)
+    try:
+        return mg.load_pretrained(name)
+    except ImportError as e:  # PyTorch missing or failed to load on this server
+        st.error("Running models needs PyTorch, which could not be loaded on this server "
+                 f"({e}). The pre-computed real-basin results still work; to run your own basin, use the "
+                 "Colab notebook linked in the sidebar.")
+        st.stop()
 
 
 @st.cache_data(show_spinner=False)
@@ -71,7 +77,7 @@ def validation_sites() -> dict:
 
 @st.cache_resource(show_spinner="Loading results...")
 def saved_case(site: str):
-    from multigauge.study import load_saved_study
+    from multigauge.results import load_saved_study
 
     data = mg.BasinData.from_folder(VALID / site / "data")
     return data, load_saved_study(VALID / site / "results")
@@ -140,7 +146,8 @@ with st.sidebar:
     if saved is not None:
         st.success("Pre-computed results: nothing to run. Explore the tabs.")
     st.header("2 · Pre-trained model")
-    models = mg.available_pretrained()
+    from multigauge.results import available_pretrained
+    models = available_pretrained()
     default = "camels-us" if "camels-us" in models else (models[0] if models else None)
     model_name = st.selectbox("Model", models, index=models.index(default) if default else 0,
                               help="camels-us: trained on 531 U.S. basins. demo-synthetic: for the demo basin only.")
