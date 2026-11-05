@@ -5,8 +5,8 @@ authors:
   - family-names: Ogunbajo
     given-names: Adeyinka
     affiliation: "Oklahoma State University"
-version: 0.2.0
-date-released: 2026-11-03
+version: 0.2.1
+date-released: 2026-11-04
 license: MIT
 repository-code: "https://github.com/ogunbajoadeyinka/multigauge-hydro"
 keywords: [hydrology, streamflow, LSTM, rain gauge, Voronoi, machine learning]

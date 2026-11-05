@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "multigauge-hydro"
-version = "0.2.0"
+version = "0.2.1"
 description = "Measure how much local rain gauges add to pre-trained deep-learning streamflow models: fine-tuning, gauge value, sub-basin routing, probabilistic forecasts and a physics-guided hybrid."
 readme = "README.md"
 requires-python = ">=3.9"

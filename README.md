@@ -31,6 +31,21 @@ baselines, with prediction intervals, sub-basin routing, multi-day forecasts and
 Outputs: NSE, KGE, RMSE, percent bias, peak-flow error, CRPS and 90 % interval coverage per model; gauge-value
 tables; hydrographs with prediction intervals; maps; forecast fan charts; and a self-contained HTML report.
 
+## Validation on five U.S. basins
+
+The CAMELS-US model was tested on five USGS basins it never saw (Oklahoma, Iowa, Georgia, Texas,
+Maryland; 2017–2023 test period). Full results, with limitations, are in
+[docs/validation_report.md](docs/validation_report.md) and on the dashboard under "Real basins".
+
+- **Check gauge timing first.** Most NOAA cooperative gauges log morning readings under the next day. multigauge
+  detects this and shifts those gauges; without the fix, gauge–Daymet correlation was 0.27–0.65, and 0.90–0.98 after.
+- **Gauge value depends on the basin and the model structure.** In lumped models the gauges help clearly in one basin
+  (Monocacy, +0.058 NSE) and are within noise elsewhere, because these NOAA gauges already feed Daymet. Split into
+  sub-basins, the Washita improves from 0.74 to **0.85** NSE with gauges, and the model names the ungauged sub-basin
+  that produces 54 % of peak flow as the best place for a new gauge.
+- **No model wins everywhere:** the δHBV hybrid is the most reliable lumped model; calibrated GR4J remains a strong benchmark.
+- **Forecasts** beat persistence from day 3 to day 7 (NSE 0.62–0.64 versus 0.47–0.09).
+
 ## Install
 
 ```bash
@@ -114,14 +129,14 @@ See [docs/research_basis.md](docs/research_basis.md) for the evidence behind eac
 
 | Name | Trained on | Use |
 |---|---|---|
-| `camels-us` | 531 CAMELS-US basins (run the Colab notebook to create it) | Real U.S. basins |
+| `camels-us` | 531 CAMELS-US basins, 1980–1995; test median NSE 0.68 (2000–2010) | Real U.S. basins |
 | `camels-us-dhbv` | same, δHBV hybrid | `--hybrid` option |
 | `demo-synthetic` | 60 synthetic basins | The built-in demo only |
 
 ## Development
 
 ```bash
-pytest            # 29 tests, about 30 seconds on a laptop
+pytest            # 36 tests, about 30 seconds on a laptop
 streamlit run app/streamlit_app.py
 ```
 

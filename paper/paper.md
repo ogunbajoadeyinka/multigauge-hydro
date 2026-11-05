@@ -47,6 +47,14 @@ with known, spatially variable storms and nonlinear runoff lets users test the m
 known. Downloaders prepare USGS streamflow, NOAA gauge data and Daymet weather for any U.S. basin, and a
 dashboard makes the workflow usable without programming.
 
+The repository includes a validation on five USGS basins outside the training set (median CAMELS-US
+test NSE of the pre-trained model 0.68). Two practical results motivate the design. First, most NOAA
+cooperative gauges report morning readings under the following day, out of step with Daymet; the
+package detects and corrects each gauge's day convention, without which measured gauge value is not
+meaningful. Second, gauge value depends on model structure: in a 9,400 km² Oklahoma basin, gauges
+added little to a lumped model but raised a routed sub-basin model from NSE 0.74 to 0.85, and the
+sub-basin model identified the ungauged area producing most of the peak flow.
+
 The package complements NeuralHydrology [@kratzert2022], a general research framework for large-sample deep
 learning in hydrology, by packaging one applied question, the value of local rain gauges and of spatial
 detail for pre-trained models, as an end-to-end, reproducible workflow for researchers and practitioners.
