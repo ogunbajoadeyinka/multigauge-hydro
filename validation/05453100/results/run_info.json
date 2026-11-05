@@ -1,0 +1,86 @@
+{
+  "multigauge_version": "0.2.0",
+  "basin": "Iowa River at Marengo, IA",
+  "area_km2": 7184.7,
+  "flow_unit": "m3/s",
+  "periods": {
+    "train": [
+      "2001-10-01",
+      "2013-09-30"
+    ],
+    "validation": [
+      "2013-10-01",
+      "2017-09-30"
+    ],
+    "test": [
+      "2017-10-01",
+      "2023-09-30"
+    ]
+  },
+  "pretrained_model": {
+    "n_basins": 531,
+    "best_val_score": 0.7181881427816174,
+    "trained_on": 531,
+    "train_period": [
+      "1980-10-01",
+      "1995-09-30"
+    ],
+    "val_period": [
+      "1995-10-01",
+      "2000-09-30"
+    ],
+    "source": "CAMELS-US",
+    "description": "LSTM pre-trained on 531 CAMELS-US basins (Daymet forcings, CMAL output).",
+    "lookback": 365,
+    "hidden_size": 128,
+    "head": "cmal"
+  },
+  "single_station": "USC00130933",
+  "single_station_reason": "highest permutation importance (validation period)",
+  "gr4j_parameters": {
+    "X1": 428.1621187055106,
+    "X2": 2.1788875931773672,
+    "X3": 99.99431121952986,
+    "X4": 4.604515474284765,
+    "DDF": 5.99917976508916
+  },
+  "notes": [
+    "12 of 13 gauges were moved one day earlier to match the Daymet day (morning-read gauges report rain under the next day): USC00130600, USC00130933, USC00131704, USC00131742, USC00132573, USC00133120, USC00133473, USC00134142, USC00134308, USC00135198, USC00138296, USC00139750. Set day_shift in stations.csv to override."
+  ],
+  "config": {
+    "train_period": [
+      "2001-10-01",
+      "2013-09-30"
+    ],
+    "validation_period": [
+      "2013-10-01",
+      "2017-09-30"
+    ],
+    "test_period": [
+      "2017-10-01",
+      "2023-09-30"
+    ],
+    "split_fractions": [
+      0.6,
+      0.2,
+      0.2
+    ],
+    "gauge_inputs": [
+      "single",
+      "lumped",
+      "voronoi",
+      "disaggregated"
+    ],
+    "single_station": "auto",
+    "n_seeds": 3,
+    "finetune_epochs": 20,
+    "finetune_lr": 0.0002,
+    "include_zero_shot": true,
+    "include_local": true,
+    "include_gr4j": true,
+    "local_config": null,
+    "permutation_repeats": 5,
+    "run_ablation": false,
+    "gr4j_maxiter": 40
+  }
+}
