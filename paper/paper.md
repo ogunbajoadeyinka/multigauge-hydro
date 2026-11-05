@@ -7,66 +7,123 @@ tags:
   - machine learning
   - LSTM
   - rain gauges
+  - flood forecasting
 authors:
   - name: Adeyinka Ogunbajo
+    orcid: 0000-0000-0000-0000
     affiliation: 1
 affiliations:
-  - name: Department of Biosystems and Agricultural Engineering, Oklahoma State University, USA
+  - name: Independent Researcher, United States
     index: 1
-date: November 2026
+date: 5 November 2026
 bibliography: paper.bib
 ---
 
-<!-- DRAFT: revise in your own words, add your ORCID, and check every reference before submitting to JOSS. -->
+<!-- DRAFT for the author. Before submitting: (1) read every sentence and rewrite it in your own words;
+(2) add your ORCID; (3) confirm the affiliation; (4) make the AI usage disclosure exactly true for how
+you worked; (5) fill in the national-survey numbers marked TODO; (6) check every reference. -->
 
 # Summary
 
-Deep-learning models trained on hundreds of basins are now the most accurate tools for daily streamflow
-simulation [@kratzert2019], and pre-trained models can be fine-tuned to individual basins [@ryd2025].
-Local rain-gauge networks, such as state mesonets, are not part of these large-sample models, and agencies
-lack a practical way to judge how much their gauges improve predictions. `multigauge` is an open-source
-Python package and web dashboard that fine-tunes a multi-basin Long Short-Term Memory (LSTM) network,
-pre-trained on CAMELS-US, to a user's basin; adds the basin's rain gauges as new inputs (one gauge, a simple
-average, a Thiessen/Voronoi average [@thiessen1911], or every gauge); and measures the resulting change in
-deterministic (NSE, KGE; [@nash1970; @gupta2009]) and probabilistic (CRPS, interval coverage) skill against
-a calibrated conceptual model (GR4J; [@perrin2003]), a single-basin LSTM and the un-tuned model. Gauges
-are ranked by permutation importance [@breiman2001] and station ablation. Extensions route sub-basin LSTM
-predictions to the outlet with learned travel times or a graph attention network [@yu2024; @mosaffa2026],
-issue probabilistic multi-day forecasts with a hindcast/forecast LSTM [@nearing2024], and combine the LSTM
-with a differentiable HBV model [@li2025].
+Rivers are forecast more and more with deep-learning models trained on hundreds of basins at once. These
+models are driven by gridded weather data that cover the whole country, while local rain-gauge networks run by
+states, cities and agencies are usually left out. `multigauge` is an open-source Python package and web
+dashboard that answers a practical question for any watershed in the conterminous United States: if the local
+rain gauges are added to a state-of-the-art AI streamflow model, how much do the predictions improve, is the
+improvement real, and where would a new gauge help most? Given a U.S. Geological Survey (USGS) streamgage
+number, the package downloads the basin boundary, streamflow, gridded weather and rain-gauge records, fine-tunes
+a pre-trained model with and without the gauges, compares the results against conventional benchmarks, and
+writes an HTML report. A dashboard (https://multigauge-hydro.streamlit.app) shows pre-computed results and runs
+the workflow on uploaded data without programming.
 
 # Statement of need
 
-The value of a rain gauge depends on the model it feeds. Gauge-network studies typically use single-basin
-models, which are known to underperform multi-basin models [@kratzert2024], so a gauge may appear valuable
-only because the baseline is weak. `multigauge` measures gauge value on top of a strong, pre-trained,
-fine-tuned model that already uses gridded weather, the setting in which agencies would deploy AI forecasts.
-New inputs are added with zero initial weights, so fine-tuning starts exactly at the pre-trained model, and
-every comparison shares periods, gap filling, model settings and random seeds. A synthetic basin generator
-with known, spatially variable storms and nonlinear runoff lets users test the method where the truth is
-known. Downloaders prepare USGS streamflow, NOAA gauge data and Daymet weather for any U.S. basin, and a
-dashboard makes the workflow usable without programming.
+Long Short-Term Memory (LSTM) networks trained on many basins are among the most accurate daily streamflow
+models [@kratzert2019], are more reliable than models trained on a single basin [@kratzert2024], and underpin
+operational flood forecasting [@nearing2024]. Pre-trained models can be adapted to a new basin by fine-tuning
+[@ryd2025]. What is missing is a standard, reproducible way to measure the value of *local* observations on top
+of such a model. Agencies that install and maintain rain gauges need this to justify networks and choose
+locations, and researchers need it to compare spatial rainfall treatments fairly. Gauge-value studies that use
+a weak baseline, such as a model trained on one basin, can overstate the value of gauges; studies that ignore
+data quality can understate it.
 
-The repository includes a validation on five USGS basins outside the training set (median CAMELS-US
-test NSE of the pre-trained model 0.68). Two practical results motivate the design. First, most NOAA
-cooperative gauges report morning readings under the following day, out of step with Daymet; the
-package detects and corrects each gauge's day convention, without which measured gauge value is not
-meaningful. Second, gauge value depends on model structure: in a 9,400 km² Oklahoma basin, gauges
-added little to a lumped model but raised a routed sub-basin model from NSE 0.74 to 0.85, and the
-sub-basin model identified the ungauged area producing most of the peak flow.
+`multigauge` targets hydrologists, water agencies, forecasters and students. It measures gauge value as the
+change in skill of a fine-tuned, pre-trained LSTM that already uses gridded weather, the setting in which an
+agency would deploy AI forecasts, and reports whether that change exceeds the variation between training runs.
 
-The package complements NeuralHydrology [@kratzert2022], a general research framework for large-sample deep
-learning in hydrology, by packaging one applied question, the value of local rain gauges and of spatial
-detail for pre-trained models, as an end-to-end, reproducible workflow for researchers and practitioners.
+# State of the field
 
-# Availability
+NeuralHydrology [@kratzert2022] is the reference research framework for deep learning in hydrology. It trains
+and evaluates many model types on large-sample data sets such as CAMELS [@newman2015; @addor2017], but it is a
+general-purpose library configured through experiment files. It does not prepare data for an arbitrary
+gauge, treat irregular rain-gauge networks as inputs, test the value of those inputs or provide a non-programmer
+interface. Conceptual models such as GR4J [@perrin2003] are widely available but do not use pre-trained
+deep learning. Rather than contribute these features to a general framework, `multigauge` packages one applied
+question end to end: it uses a small, documented model whose inputs are available for every U.S. basin, so that
+results are comparable across basins and reproducible by agencies without large-sample data sets.
 
-The source code, pre-trained models and validation results are at
-https://github.com/ogunbajoadeyinka/multigauge-hydro (MIT licence) and archived on Zenodo
-(https://doi.org/10.5281/zenodo.23986756). A web dashboard is available at https://multigauge-hydro.streamlit.app.
+# Software design
+
+**Inputs that transfer.** The pre-trained LSTM uses five Daymet variables [@thornton2021] and nine static
+attributes computed from those forcings and the basin area, so any U.S. basin can use it without an external
+attribute database. Output is a countable mixture of asymmetric Laplace distributions, which gives prediction
+intervals evaluated with the continuous ranked probability score [@hersbach2000].
+
+**Gauges as neutral new inputs.** Gauge rainfall enters as additional input channels whose weights start at
+zero, so fine-tuning begins exactly at the pre-trained model. Four treatments are compared: one gauge, the gauge
+average, a Thiessen (Voronoi) average [@thiessen1911], and every gauge as its own input, ranked by permutation
+importance [@breiman2001] and optional station ablation.
+
+**Data quality checks.** Most NOAA cooperative observers record the gauge total in the morning, under the
+day it was read; Daymet moves such reports back one day [@thornton2021], but raw GHCN-Daily records
+[@menne2012] do not. `multigauge` detects each gauge's day convention by lagged correlation with basin-average
+Daymet precipitation and corrects it, or uses a value the user supplies. On five validation basins this raised
+the correlation between basin-average gauge rainfall and Daymet from 0.27–0.65 to 0.90–0.98.
+
+**Honest comparisons.** Every model shares periods, gap filling and random seeds. Gauge value is computed seed
+by seed and labelled as helping or hurting only when it exceeds twice its seed-to-seed spread and 0.01 in the
+Nash–Sutcliffe efficiency (NSE) [@nash1970]. Benchmarks are a calibrated GR4J model, an LSTM trained on the basin
+alone and the pre-trained model without fine-tuning; skill is reported as NSE, Kling–Gupta efficiency
+[@gupta2009], bias, peak error, CRPS and interval coverage.
+
+**Extensions.** Sub-basin LSTMs can be routed to the outlet with learned gamma travel-time distributions or
+a graph attention network [@yu2024; @mosaffa2026], which shows where flood flow originates and which sub-basins
+lack gauges. A hindcast/forecast LSTM issues 1–7-day probabilistic forecasts, and a differentiable HBV model
+[@feng2022] can be combined with the LSTM [@li2025].
+
+**Structure.** Data loading and validation (`io`, `prepare`, `download`), features and gauge strategies,
+models (`nn`, `transfer`, `baselines`, `hybrid`, `routing`, `forecast`), the study runner (`study`), results
+that load without PyTorch (`results`), reporting and a command-line interface are separate modules. A test
+suite runs on every commit, and pre-trained models ship with the package.
+
+# Research impact statement
+
+The repository includes a validation on five USGS basins in five states that are outside the pre-training set
+(the pre-trained model has a median test NSE of 0.68 over 531 CAMELS basins). It found that gauge value
+depends on the basin and on model structure. NOAA gauges improved the fine-tuned model clearly in one basin
+(Monocacy River, Maryland; NSE +0.058, about six times its seed spread), were negligible or within noise in
+three, and slightly degraded a lumped model of a 9,400 km² Oklahoma basin. The same gauges, given to a routed
+four-sub-basin model of that basin, raised NSE from 0.74 to 0.85 and identified an ungauged sub-basin producing
+over half of peak flow. A national survey with the same method covers TODO basins in all 18 U.S. hydrologic
+regions (TODO: one-sentence result). The day-convention check corrects a data error that otherwise makes gauge
+networks look less valuable. All results, data-preparation code and notebooks needed to reproduce them are
+in the repository, and the software is archived on Zenodo (https://doi.org/10.5281/zenodo.23986756).
+
+# AI usage disclosure
+
+Generative AI was used in this project. Claude (Anthropic; Claude Opus 5.5, used through the Claude app,
+October–November 2026) wrote most of the source code, tests, notebooks and documentation, and a first draft of
+this paper, working from the author's instructions. The author defined the research question and scope, chose
+among alternative designs proposed during development, ran the pre-training on cloud GPUs, and reviewed the
+validation results. Correctness was checked by an automated test suite (unit tests and end-to-end tests on a
+synthetic basin with known rainfall), by comparison of the pre-trained model with published CAMELS benchmarks, by
+manual inspection of the validation results, and by the author's review and revision of this manuscript.
+<!-- Edit this paragraph so that every statement is exactly true for how you worked. -->
 
 # Acknowledgements
 
-<!-- Add advisor, committee, funding and data providers as appropriate. -->
+The author thanks the providers of the public data used here: the U.S. Geological Survey, the Oak Ridge National
+Laboratory Distributed Active Archive Center (Daymet), the NOAA National Centers for Environmental Information
+(GHCN-Daily) and the creators of the CAMELS data set. No specific funding was received.
 
 # References

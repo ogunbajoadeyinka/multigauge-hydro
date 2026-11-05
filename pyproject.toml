@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,12 +8,12 @@ version = "0.2.1"
 description = "Measure how much local rain gauges add to pre-trained deep-learning streamflow models: fine-tuning, gauge value, sub-basin routing, probabilistic forecasts and a physics-guided hybrid."
 readme = "README.md"
 requires-python = ">=3.9"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{ name = "Adeyinka Ogunbajo" }]
 keywords = ["hydrology", "streamflow", "LSTM", "rain gauge", "machine learning", "Voronoi", "flood forecasting"]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering :: Hydrology",
@@ -40,6 +40,8 @@ multigauge = "multigauge.cli:main"
 [project.urls]
 Homepage = "https://github.com/ogunbajoadeyinka/multigauge-hydro"
 Issues = "https://github.com/ogunbajoadeyinka/multigauge-hydro/issues"
+Dashboard = "https://multigauge-hydro.streamlit.app"
+DOI = "https://doi.org/10.5281/zenodo.23986756"
 
 [tool.setuptools.packages.find]
 where = ["src"]

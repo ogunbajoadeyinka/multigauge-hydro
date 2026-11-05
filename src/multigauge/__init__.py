@@ -36,6 +36,7 @@ _EXPORTS = {
     "generate_basin": "synthetic", "generate_pretraining_set": "synthetic", "write_basin": "synthetic",
     "load_camels": "camels",
     "write_report": "report",
+    "run_national": "national", "national_summary": "national",
 }
 
 __all__ = sorted(_EXPORTS) + ["__version__"]

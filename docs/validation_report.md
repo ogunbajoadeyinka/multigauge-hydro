@@ -101,8 +101,8 @@ The sub-basin model also shows where the flood water comes from: sub-basin Z1, t
 outlet, produces 54 % of peak flow and has **no gauge**, so it is the highest-priority location for a
 new gauge. The three gauges in Z2 improve that sub-basin by 0.05 NSE; the one gauge in Z3 by 0.12.
 
-**Implication.** Gauge networks that are *not* already in the gridded products, such as the Oklahoma
-Mesonet, are the case where the method should show the most value; that is the next experiment.
+**Implication.** Gauge networks that are *not* already in the gridded products, such as state mesonets,
+city flood-warning networks or radar-based estimates, are where the method should show the most value.
 Sub-basin modelling should be the default for basins well above the 2,000 km² training range.
 
 ## Finding 4 — forecasts (Washita, 1–7 days)

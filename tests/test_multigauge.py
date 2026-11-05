@@ -534,3 +534,20 @@ def test_gauge_value_seed_verdict():
     out = add_seed_spread(gv, pd.DataFrame(rows)).set_index("gauge_input")
     assert out.loc["single", "verdict"] == "helps"
     assert out.loc["lumped", "verdict"] == "within noise"
+
+
+def test_national_candidate_order(tmp_path):
+    from multigauge.national import candidate_order, read_camels_catalog
+
+    (tmp_path / "camels_name.txt").write_text(
+        "gauge_id;huc_02;gauge_name\n1013500;1;A\n1022500;1;B\n2011400;2;C\n2013000;2;D\n3010655;3;E\n")
+    (tmp_path / "camels_topo.txt").write_text(
+        "gauge_id;gauge_lat;gauge_lon;elev_mean;slope_mean;area_gages2;area_geospa_fabric\n"
+        "1013500;47.2;-68.6;250;21;2252;2303\n1022500;44.6;-67.9;92;17;573;620\n"
+        "2011400;38.1;-79.8;692;54;100;104\n2013000;38.0;-79.9;700;50;1200;1206\n3010655;41.9;-79.3;500;40;9000;9000\n")
+    cat = read_camels_catalog(tmp_path / "camels_name.txt", tmp_path / "camels_topo.txt")
+    assert list(cat.index[:1]) == ["01013500"] and cat.loc["02011400", "huc_02"] == "02"
+    order = candidate_order(cat, min_area_km2=150, max_area_km2=5000)
+    assert set(order.index) == {"01013500", "01022500", "02013000"}  # 100 and 9000 km2 excluded
+    # regions are interleaved: the first two candidates come from different regions
+    assert order["huc_02"].iloc[0] != order["huc_02"].iloc[1]

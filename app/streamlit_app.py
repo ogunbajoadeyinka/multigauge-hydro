@@ -235,6 +235,21 @@ if saved is not None:
                        "Whether each gain is larger than training noise is shown in the Gauge value tab. "
                        "[Full validation report](https://github.com/ogunbajoadeyinka/multigauge-hydro/blob/main/docs/validation_report.md)")
 
+nat = ROOT / "validation" / "national" / "national_summary.csv"
+if saved is not None and nat.exists():
+    with st.expander("National survey: where do rain gauges help? (map)", expanded=False):
+        from multigauge.national import fig_national_map
+
+        ns = pd.read_csv(nat, dtype={"site": str, "huc_02": str})
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Basins", len(ns))
+        c2.metric("Gauges clearly help", int((ns["verdict"] == "helps").sum()))
+        c3.metric("Median NSE gain", f"{ns['NSE_gain'].median():+.3f}")
+        st.plotly_chart(fig_national_map(ns), config=PLOT, width="stretch")
+        st.caption("Each marker is a USGS basin; colour is the change in test NSE when the basin's NOAA rain gauges are "
+                   "added to the fine-tuned model; filled markers are gains or losses larger than training noise. "
+                   "Method: notebooks/national_kaggle.ipynb.")
+
 tabs = st.tabs(["Basin & gauges", "Model comparison", "Gauge value", "Sub-basins", "Forecast", "Download", "Method"])
 from multigauge import report as R  # noqa: E402
 
