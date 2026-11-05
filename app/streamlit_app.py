@@ -148,7 +148,8 @@ with st.sidebar:
     st.header("2 · Pre-trained model")
     from multigauge.results import available_pretrained
     models = available_pretrained()
-    default = "camels-us" if "camels-us" in models else (models[0] if models else None)
+    want = "demo-synthetic" if source == "Demo basin" else "camels-us"
+    default = want if want in models else (models[0] if models else None)
     model_name = st.selectbox("Model", models, index=models.index(default) if default else 0,
                               help="camels-us: trained on 531 U.S. basins. demo-synthetic: for the demo basin only.")
     if model_name == "demo-synthetic" and source != "Demo basin":
