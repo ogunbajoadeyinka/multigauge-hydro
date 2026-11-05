@@ -217,9 +217,22 @@ if saved is not None:
     summ = VALID / "summary.csv"
     if summ.exists():
         with st.expander("All validation basins at a glance", expanded=True):
-            st.dataframe(pd.read_csv(summ), width="stretch", hide_index=True)
-            st.caption("Test period 2018–2023 water years, basins not used in pre-training. NSE: 1 is perfect. "
-                       "NSE_gain_from_gauges: best improvement from adding the basin's rain gauges to the fine-tuned model.")
+            t = pd.read_csv(summ, dtype={"site": str})
+            names = {"site": "USGS site", "basin": "Basin", "area_km2": "Area (km²)", "gauges": "Gauges",
+                     "NSE_gr4j": "GR4J", "NSE_local": "Local LSTM", "NSE_pretrained": "Pre-trained",
+                     "NSE_finetuned": "Fine-tuned", "NSE_ft_single": "+ single gauge", "NSE_ft_lumped": "+ gauge average",
+                     "NSE_ft_voronoi": "+ Voronoi", "NSE_ft_disaggregated": "+ all gauges", "NSE_dhbv": "δHBV",
+                     "NSE_ensemble": "Ensemble", "best_gauge_input": "Best gauge input",
+                     "NSE_gain_from_gauges": "NSE gain from gauges", "CRPS_reduction_pct": "CRPS reduction %"}
+            t = t.rename(columns=names)
+            if "Best gauge input" in t:
+                t["Best gauge input"] = t["Best gauge input"].map(
+                    {"single": "single", "lumped": "average", "voronoi": "Voronoi", "disaggregated": "all gauges"}).fillna(t["Best gauge input"])
+            st.dataframe(t, width="stretch", hide_index=True)
+            st.caption("Test NSE, October 2017 to September 2023, on basins not used in pre-training (1 is perfect). "
+                       "\"+ …\" columns: the fine-tuned model with the basin's rain gauges added. "
+                       "Whether each gain is larger than training noise is shown in the Gauge value tab. "
+                       "[Full validation report](https://github.com/ogunbajoadeyinka/multigauge-hydro/blob/main/docs/validation_report.md)")
 
 tabs = st.tabs(["Basin & gauges", "Model comparison", "Gauge value", "Sub-basins", "Forecast", "Download", "Method"])
 from multigauge import report as R  # noqa: E402
