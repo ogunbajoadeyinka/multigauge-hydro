@@ -520,3 +520,17 @@ def test_gauge_day_alignment(tmp_path):
     assert d2.stations["day_shift"].eq(0).all() and not any("moved" in n for n in d2.notes)
     d3 = mg.BasinData(rain.copy(), st, q, forcings=forc, area_km2=500.0, align_days=False)
     assert d3.stations["day_shift"].eq(0).all()
+
+
+def test_gauge_value_seed_verdict():
+    from multigauge.study import add_seed_spread
+
+    rows = []
+    for seed, (ft, g1, g2) in enumerate([(0.60, 0.70, 0.61), (0.62, 0.71, 0.58), (0.58, 0.69, 0.66)]):
+        for m, v in (("finetuned", ft), ("ft_single", g1), ("ft_lumped", g2)):
+            rows.append({"model": m, "seed": seed, "period": "test", "metric": "NSE", "value": v})
+    gv = pd.DataFrame([{"gauge_input": "single", "period": "test", "NSE_gain": 0.10},
+                       {"gauge_input": "lumped", "period": "test", "NSE_gain": 0.017}])
+    out = add_seed_spread(gv, pd.DataFrame(rows)).set_index("gauge_input")
+    assert out.loc["single", "verdict"] == "helps"
+    assert out.loc["lumped", "verdict"] == "within noise"

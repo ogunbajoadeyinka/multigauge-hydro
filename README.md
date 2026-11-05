@@ -40,10 +40,11 @@ Maryland; 2017–2023 test period). Full results, with limitations, are in
 - **Check gauge timing first.** Most NOAA cooperative gauges log morning readings under the next day. multigauge
   detects this and shifts those gauges; without the fix, gauge–Daymet correlation was 0.27–0.65, and 0.90–0.98 after.
 - **Gauge value depends on the basin and the model structure.** In lumped models the gauges help clearly in one basin
-  (Monocacy, +0.058 NSE) and are within noise elsewhere, because these NOAA gauges already feed Daymet. Split into
+  (Monocacy, +0.058 NSE), are negligible or within seed noise in three, and slightly hurt the lumped Washita model,
+  because these NOAA gauges already feed Daymet. Split into
   sub-basins, the Washita improves from 0.74 to **0.85** NSE with gauges, and the model names the ungauged sub-basin
   that produces 54 % of peak flow as the best place for a new gauge.
-- **No model wins everywhere:** the δHBV hybrid is the most reliable lumped model; calibrated GR4J remains a strong benchmark.
+- **No model wins everywhere:** δHBV, GR4J and the local LSTM each win somewhere; the LSTM + δHBV ensemble is never the worst.
 - **Forecasts** beat persistence from day 3 to day 7 (NSE 0.62–0.64 versus 0.47–0.09).
 
 ## Install
@@ -136,7 +137,7 @@ See [docs/research_basis.md](docs/research_basis.md) for the evidence behind eac
 ## Development
 
 ```bash
-pytest            # 36 tests, about 30 seconds on a laptop
+pytest            # 37 tests, about 30 seconds on a laptop
 streamlit run app/streamlit_app.py
 ```
 

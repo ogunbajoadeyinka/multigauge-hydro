@@ -19,7 +19,7 @@ uses gridded weather, and if so, where and how should the gauges be used?
 | Periods | train 2001-10 to 2013-09 · validation 2013-10 to 2017-09 · **test 2017-10 to 2023-09** (all scores below are test scores) |
 | Models compared | GR4J with snow (calibrated, differential evolution); LSTM trained from scratch on the basin; pre-trained LSTM without tuning; fine-tuned LSTM with gridded weather only; fine-tuned + gauges as a single gauge, gauge average, Voronoi-weighted average, or every gauge; δHBV; LSTM + δHBV ensemble |
 | Gauge value | change in test NSE (and CRPS) of *fine-tuned + gauges* over *fine-tuned with gridded weather only*, same seeds and periods |
-| Seeds | 3 per LSTM model; seed-to-seed spread reported |
+| Seeds | 3 per LSTM model. Gauge value is compared seed by seed; a gain counts as real when it exceeds twice its seed-to-seed spread and 0.01 NSE |
 
 ### CAMELS-US pre-training
 
@@ -60,27 +60,30 @@ models.
 | Washita River at Anadarko, OK | 9,412 | 5 | 0.602 | 0.404 | 0.159 | 0.261 | 0.241 (single) | **0.724** | 0.537 |
 | Iowa River at Marengo, IA | 7,185 | 13 | 0.712 | **0.811** | 0.327 | 0.715 | 0.730 (average) | 0.718 | 0.774 |
 | Flint River, GA | 4,778 | 5 | 0.807 | 0.705 | 0.529 | 0.678 | 0.684 (all) | **0.840** | 0.800 |
-GUADALUPE_ROW
+| Guadalupe River at Comfort, TX | 2,174 | 6 | 0.139 | 0.134 | **0.237** | 0.027 | 0.099 (single) | −0.014 | 0.091 |
 | Monocacy River at Jug Bridge, MD | 2,103 | 3 | **0.826** | 0.676 | 0.197 | 0.724 | 0.782 (all) | 0.794 | 0.808 |
 
 - **The pre-trained model does not transfer well without tuning to these basins** (NSE 0.16–0.53). All five
   are larger than any CAMELS training basin (the 531-basin set is limited to under 2,000 km²), so
   this is extrapolation in basin size. Fine-tuning recovers most of the gap.
-- **No single model is best everywhere.** The δHBV hybrid is the most reliable of the
-  whole-basin (lumped) models: best or within 0.03 of best in four of five basins. The LSTM + δHBV
-  ensemble is never the worst and is a sensible default.
+- **No single model is best everywhere.** δHBV is best in the Washita and Flint, the local LSTM in Iowa,
+  GR4J in the Monocacy. The LSTM + δHBV ensemble is never the worst and is within 0.04 of the best model
+  in three of five basins, so it is a sensible default.
+- **The Guadalupe defeats every model** (best NSE 0.24). It is a flashy Texas Hill Country river on karst,
+  where rare storm floods dominate the test score and much of the flow comes from springs fed by
+  groundwater beyond the surface catchment. Scores there should not be read as gauge value.
 - **Calibrated GR4J remains a strong benchmark** in these large, partly semi-arid basins. Any claim that
   AI is better has to be tested basin by basin, which multigauge does by default.
 
 ## Finding 3 — the value of gauges depends on the basin and on the model structure
 
-| Basin | NSE gain from gauges (best input) | Seed spread (s.d. of NSE) | CRPS change | Verdict |
+| Basin | NSE gain from gauges (best input) | Seed spread of the gain (s.d.) | CRPS change | Verdict |
 |---|---|---|---|---|
-| Monocacy, MD | **+0.058** (all gauges) | 0.01 | −6.1 % (better) | clear gain |
-| Iowa, IA | +0.015 (average) | 0.01–0.03 | −1.0 % | within noise |
-| Flint, GA | +0.005 (all gauges) | 0.004 | −0.6 % | negligible |
-GUADALUPE_GV
-| Washita, OK — lumped | −0.020 (single) | 0.04 | −1.1 % | within noise |
+| Monocacy, MD | **+0.058** (all gauges) | 0.009 | −6.1 % (better) | helps, for every gauge input |
+| Iowa, IA | +0.015 (average) | 0.027 | −1.0 % | within noise |
+| Flint, GA | +0.005 (all gauges) | 0.002 | −0.6 % | negligible |
+| Guadalupe, TX | +0.072 (single) | 0.136 | +3.4 % (worse) | within noise; every model is poor here |
+| Washita, OK — lumped | −0.020 (single) | 0.002 | −1.1 % | hurts, for every gauge input (−0.02 to −0.10) |
 | Washita, OK — **sub-basins** | **+0.103** (routed 0.742 → routed + gauges 0.845) | — | — | clear gain |
 
 The GHCN gauges used here are among the stations Daymet is interpolated from, so in a lumped model
@@ -120,6 +123,9 @@ planned.
 ## Limitations
 
 - Five basins only; results show patterns, not general laws.
+- In the first, misaligned run the Guadalupe appeared to gain +0.27 NSE from gauges. With aligned gauges
+  and the seed spread taken into account, that gain is not there: a reminder to read gauge value
+  against seed noise, as the report and dashboard now show.
 - All five basins are larger than the training basins. Pre-training on a set that includes larger
   basins (e.g. CAMELS-US 671, Caravan) should narrow the gap between the zero-shot and fine-tuned models.
 - The Washita validation period (2013–2017) contains the record May 2015 floods; validation NSE is

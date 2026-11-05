@@ -279,6 +279,13 @@ with tabs[2]:
         c1.plotly_chart(R.fig_gauge_value(res.gauge_value, "NSE_gain"), config=PLOT, width="stretch")
         if res.gauge_value["CRPS_reduction_pct"].notna().any():
             c2.plotly_chart(R.fig_gauge_value(res.gauge_value, "CRPS_reduction_pct"), config=PLOT, width="stretch")
+        if "verdict" in res.gauge_value:
+            t = res.gauge_value[res.gauge_value["period"] == "test"].set_index("gauge_input")
+            st.markdown("**Is the gain real?** A gain counts only when it is more than twice the seed-to-seed spread "
+                        "(the same model trained with different random starts) and at least 0.01 NSE.")
+            st.dataframe(pd.DataFrame({"NSE gain": t["NSE_gain"].round(3), "seed spread (s.d.)": t["NSE_gain_seed_sd"].round(3),
+                                       "CRPS change %": (-t["CRPS_reduction_pct"]).round(1), "verdict": t["verdict"]}),
+                         width="stretch")
         if res.importance is not None:
             st.plotly_chart(R.fig_importance(res.importance), config=PLOT, width="stretch")
         if getattr(res, "ablation", None) is not None:

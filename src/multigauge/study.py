@@ -350,7 +350,7 @@ def run_study(
                     "CRPS_reduction_pct": 100 * (b_["CRPS"] - a["CRPS"]) / b_["CRPS"] if "CRPS" in a and b_["CRPS"] else np.nan,
                     "PeakError_change": a["PeakError"] - b_["PeakError"],
                 })
-        gauge_value = pd.DataFrame(gv)
+        gauge_value = add_seed_spread(pd.DataFrame(gv), metrics)
 
     # ---- ablation
     ablation = None
@@ -458,6 +458,35 @@ class SavedStudy:
         return self.predictions[model]
 
 
+def add_seed_spread(gauge_value: pd.DataFrame, metrics: pd.DataFrame, min_gain: float = 0.01) -> pd.DataFrame:
+    """Add the seed-to-seed spread of each NSE gain and a plain verdict.
+
+    The gain is compared seed by seed (gauges vs no gauges, same seed), so the
+    spread measures training noise. ``verdict`` is "helps"/"hurts" when the
+    gain is more than twice that spread and at least ``min_gain`` in size,
+    "negligible" when it is consistent but smaller, otherwise "within noise".
+    """
+    if gauge_value is None or metrics is None or metrics.empty:
+        return gauge_value
+    m = metrics[metrics["metric"] == "NSE"].pivot_table(index=["period", "seed"], columns="model", values="value")
+    sd, verdict = [], []
+    for _, r in gauge_value.iterrows():
+        col = GAUGE_MODELS.get(r["gauge_input"])
+        if col not in m or "finetuned" not in m or r["period"] not in m.index.get_level_values(0):
+            sd.append(np.nan); verdict.append("")
+            continue
+        d = (m.loc[r["period"], col] - m.loc[r["period"], "finetuned"]).dropna()
+        s_ = float(d.std(ddof=1)) if len(d) > 1 else np.nan
+        sd.append(s_)
+        if np.isnan(s_):
+            verdict.append("one seed only")
+        elif abs(r["NSE_gain"]) > 2 * s_:
+            verdict.append("negligible" if abs(r["NSE_gain"]) < min_gain else ("helps" if r["NSE_gain"] > 0 else "hurts"))
+        else:
+            verdict.append("within noise")
+    return gauge_value.assign(NSE_gain_seed_sd=sd, verdict=verdict)
+
+
 def load_saved_study(folder) -> SavedStudy:
     folder = Path(folder)
     info = json.loads((folder / "run_info.json").read_text())
@@ -473,6 +502,9 @@ def load_saved_study(folder) -> SavedStudy:
             df["period"] = pr["period"]
             preds[m] = df
     opt = lambda n: pd.read_csv(folder / n) if (folder / n).exists() else None
+    gv = opt("gauge_value.csv")
+    if gv is not None and "verdict" not in gv and (folder / "metrics_by_seed.csv").exists():
+        gv = add_seed_spread(gv, pd.read_csv(folder / "metrics_by_seed.csv"))
     extras = {}
     for n in ("subbasin_models.csv", "subbasin_contributions.csv", "forecast_skill.csv"):
         if (folder / n).exists():
@@ -480,6 +512,6 @@ def load_saved_study(folder) -> SavedStudy:
     return SavedStudy(
         basin_name=info.get("basin", folder.parent.name), flow_unit=info.get("flow_unit", "m3/s"),
         area_km2=float(info.get("area_km2", np.nan)), summary=summary, predictions=preds,
-        gauge_value=opt("gauge_value.csv"), importance=opt("importance.csv"),
+        gauge_value=gv, importance=opt("importance.csv"),
         station_summary=pd.read_csv(folder / "stations.csv", index_col=0), info=info, extras=extras,
     )
