@@ -93,8 +93,13 @@ def select_gauges(inventory: pd.DataFrame, geom, start: str, end: str, buffer_km
 
 def prepare_usgs_basin(site: str, start: str, end: str, folder, name: Optional[str] = None,
                        max_gauges: int = 15, daymet_points: int = 16, min_coverage_days: float = 0.7,
-                       progress=print):
-    """Download everything for one gauge and write a basin folder; returns BasinData."""
+                       buffer_km: float = 5.0, min_years_fraction: float = 0.8, progress=print):
+    """Download everything for one gauge and write a basin folder; returns BasinData.
+
+    Rain gauges are taken from inside the basin plus ``buffer_km``, with a
+    record covering at least ``min_years_fraction`` of the years and
+    ``min_coverage_days`` of the days. Files already in ``folder`` from an
+    earlier attempt (boundary, streamflow, Daymet) are reused."""
     from .download import _session, daymet_basin, ghcn_daily_precip, usgs_daily_flow
     from .io import BasinData, boundary_area_km2
 
@@ -106,13 +111,10 @@ def prepare_usgs_basin(site: str, start: str, end: str, folder, name: Optional[s
     (folder / "boundary.geojson").write_text(json.dumps(
         {"type": "FeatureCollection", "features": [{"type": "Feature", "properties": {"site": site}, "geometry": mapping(geom)}]}))
 
-    progress(f"[{site}] streamflow ({area:,.0f} km2)")
-    q = usgs_daily_flow(site, start, end, units="m3/s")
-    q.to_frame("flow").to_csv(folder / "streamflow.csv", date_format="%Y-%m-%d")
-
-    progress(f"[{site}] Daymet weather")
-    f = daymet_basin(geom, start, end, n_points=daymet_points)
-    f.to_csv(folder / "forcings.csv", date_format="%Y-%m-%d")
+    if not (folder / "streamflow.csv").exists():
+        progress(f"[{site}] streamflow ({area:,.0f} km2)")
+        q = usgs_daily_flow(site, start, end, units="m3/s")
+        q.to_frame("flow").to_csv(folder / "streamflow.csv", date_format="%Y-%m-%d")
 
     progress(f"[{site}] rain gauges")
     inv_file = Path.home() / ".cache" / "multigauge" / "ghcnd-inventory.txt"
@@ -121,7 +123,8 @@ def prepare_usgs_basin(site: str, start: str, end: str, folder, name: Optional[s
         r = _session().get(GHCN_INVENTORY, timeout=300)
         r.raise_for_status()
         inv_file.write_text(r.text)
-    cand = select_gauges(read_ghcn_inventory(inv_file.read_text()), geom, start, end, max_gauges=max_gauges * 2)
+    cand = select_gauges(read_ghcn_inventory(inv_file.read_text()), geom, start, end, buffer_km=buffer_km,
+                         max_gauges=max_gauges * 2, min_years_fraction=min_years_fraction)
     if cand.empty:
         raise RuntimeError(f"No GHCN precipitation gauges with enough record in or near basin {site}.")
     rain, st = ghcn_daily_precip(cand["id"].tolist(), start, end)
@@ -135,7 +138,15 @@ def prepare_usgs_basin(site: str, start: str, end: str, folder, name: Optional[s
     rain.to_csv(folder / "rainfall.csv", date_format="%Y-%m-%d")
     st.to_csv(folder / "stations.csv")
 
-    meta = {"name": name or f"USGS {site}", "usgs_site": site, "flow_unit": "m3/s", "area_km2": round(area, 1)}
+    if (folder / "forcings.csv").exists():
+        f = pd.read_csv(folder / "forcings.csv", index_col=0, parse_dates=True)
+    else:
+        progress(f"[{site}] Daymet weather")
+        f = daymet_basin(geom, start, end, n_points=daymet_points)
+        f.to_csv(folder / "forcings.csv", date_format="%Y-%m-%d")
+
+    meta = {"name": name or f"USGS {site}", "usgs_site": site, "flow_unit": "m3/s", "area_km2": round(area, 1),
+            "gauge_search_km": buffer_km, "gauge_min_years_fraction": min_years_fraction}
     if outlet:
         meta.update(outlet_lat=outlet[0], outlet_lon=outlet[1])
     (folder / "basin.json").write_text(json.dumps(meta, indent=2))

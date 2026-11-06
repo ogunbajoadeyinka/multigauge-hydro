@@ -139,7 +139,9 @@ class StudyResult:
 
 
 # =========================================================================
-def make_periods(dates: pd.DatetimeIndex, cfg: StudyConfig, lookback: int) -> dict:
+def make_periods(dates: pd.DatetimeIndex, cfg: StudyConfig, lookback: int, min_period_fraction: float = 0.75) -> dict:
+    """Train/validation/test periods; a period the record covers by at least
+    ``min_period_fraction`` is clipped to the record instead of rejected."""
     given = {"train": cfg.train_period, "validation": cfg.validation_period, "test": cfg.test_period}
     if all(v is not None for v in given.values()):
         periods = {k: (pd.Timestamp(v[0]), pd.Timestamp(v[1])) for k, v in given.items()}
@@ -152,11 +154,16 @@ def make_periods(dates: pd.DatetimeIndex, cfg: StudyConfig, lookback: int) -> di
         for k, v in given.items():
             if v is not None:
                 periods[k] = (pd.Timestamp(v[0]), pd.Timestamp(v[1]))
-    for k, (a, b) in periods.items():
+    for k, (a, b) in list(periods.items()):
         if a > b:
             raise ValueError(f"The {k} period starts after it ends.")
         if a < dates[0] or b > dates[-1]:
-            raise ValueError(f"The {k} period ({a.date()} to {b.date()}) is outside the data ({dates[0].date()} to {dates[-1].date()}).")
+            # a record that ends (or starts) a little inside a period is clipped, not rejected
+            a2, b2 = max(a, dates[0]), min(b, dates[-1])
+            if a2 <= b2 and (b2 - a2).days + 1 >= min_period_fraction * ((b - a).days + 1):
+                periods[k] = (a2, b2)
+            else:
+                raise ValueError(f"The {k} period ({a.date()} to {b.date()}) is outside the data ({dates[0].date()} to {dates[-1].date()}).")
     n_train = int(((dates >= periods["train"][0]) & (dates <= periods["train"][1])).sum())
     if n_train < lookback + 365:
         raise ValueError(

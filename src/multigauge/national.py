@@ -10,6 +10,7 @@ and a basin that failed is recorded in ``failed.csv`` and not retried.
 """
 from __future__ import annotations
 
+import json
 import time
 import traceback
 from pathlib import Path
@@ -76,11 +77,20 @@ def candidate_order(catalog: pd.DataFrame, per_region: int = 5, min_area_km2: fl
     return c.sort_values(["rank", "huc_02"]).drop(columns="key")
 
 
+FILL_IN = {"buffer_km": 25.0, "min_years_fraction": 0.6, "min_coverage_days": 0.55}
+"""Gauge search for the fill-in pass: regions short of basins after the
+standard pass (5 km around the basin, 80 % of years) are retried with a wider
+search and shorter records. The setting used is stored per basin."""
+
+
 def run_national(candidates: pd.DataFrame, out, model, per_region: int = 5, hybrid=None,
                  time_budget_h: float = 10.5, config=None, prepare: Optional[Callable] = None,
+                 fill_in: Optional[dict] = FILL_IN, fill_candidates: Optional[pd.DataFrame] = None,
                  log=print) -> pd.DataFrame:
     """Run the study on candidates until ``per_region`` basins per region
-    succeed or the time budget is spent. Returns the summary table."""
+    succeed or the time budget is spent, then (``fill_in``) retry the regions
+    that are still short with a wider gauge search, using ``fill_candidates``
+    (default: the same list). Returns the summary table."""
     from . import BasinData, run_study, write_report
     from .prepare import prepare_usgs_basin
 
@@ -90,41 +100,77 @@ def run_national(candidates: pd.DataFrame, out, model, per_region: int = 5, hybr
     out.mkdir(parents=True, exist_ok=True)
     failed_f = out / "failed.csv"
     failed = pd.read_csv(failed_f, dtype={"site": str}) if failed_f.exists() else pd.DataFrame(columns=["site", "reason"])
-    failed = failed[~failed["reason"].astype(str).map(_transient)]
+    failed = failed[~failed["reason"].astype(str).map(_transient).astype(bool)].reset_index(drop=True)
     t0 = time.time()
     done = {p.parent.parent.name for p in out.glob("*/results/run_info.json")}
-    for site, row in candidates.iterrows():
-        n_ok = sum(1 for s in done if s in candidates.index and candidates.loc[s, "huc_02"] == row["huc_02"])
-        if site in done or n_ok >= per_region or site in set(failed["site"]):
-            continue
-        if (time.time() - t0) / 3600 > time_budget_h:
-            log(f"Time budget of {time_budget_h} h reached; re-run to continue.")
-            break
+    region_of = {}
+
+    def n_ok(huc):
+        return sum(1 for s_ in done if region_of.get(s_) == huc)
+
+    def attempt(site, row, kwargs, tag):
+        nonlocal failed
         folder = out / site
         try:
             t = time.time()
             if (folder / "data" / "basin.json").exists():
                 d = BasinData.from_folder(folder / "data")
             else:
-                d = prepare(site, START, END, folder / "data", name=f"{row['gauge_name']}".strip(), progress=lambda m: None)
+                d = prepare(site, START, END, folder / "data", name=f"{row['gauge_name']}".strip(),
+                            progress=lambda m: None, **kwargs)
             res = run_study(d, model, cfg, hybrid=hybrid)
             res.save(folder / "results")
             write_report(res, d, folder / "results" / "report.html")
             done.add(site)
             log(f"[{len(done)}] {site} {row['gauge_name'][:40]} ({HUC2_NAMES.get(row['huc_02'], row['huc_02'])}): "
-                f"{d.rainfall.shape[1]} gauges, {(time.time() - t) / 60:.1f} min")
+                f"{d.rainfall.shape[1]} gauges, {(time.time() - t) / 60:.1f} min{tag}")
         except Exception as exc:  # record and move on; one basin must not stop the survey
             reason = str(exc).splitlines()[0][:200] if str(exc) else type(exc).__name__
             if _transient(reason):  # a server or network hiccup: try this basin again on the next run
                 log(f"  {site} postponed (download error, retried next run): {reason[:90]}")
-                continue
-            failed = pd.concat([failed, pd.DataFrame([{"site": site, "reason": reason}])], ignore_index=True)
+                return
+            failed = pd.concat([failed, pd.DataFrame([{"site": site, "reason": tag.strip() + " " + reason if tag else reason}])],
+                               ignore_index=True)
             failed.to_csv(failed_f, index=False)
-            log(f"  {site} skipped: {reason}")
+            log(f"  {site} skipped{tag}: {reason}")
             if not isinstance(exc, (RuntimeError, ValueError)):
                 traceback.print_exc()
-        national_summary(out, candidates).to_csv(out / "national_summary.csv", index=False)
-    return national_summary(out, candidates)
+        national_summary(out, pd.concat([candidates, fill_candidates]) if fill_candidates is not None else candidates
+                         ).to_csv(out / "national_summary.csv", index=False)
+
+    def over_budget():
+        if (time.time() - t0) / 3600 > time_budget_h:
+            log(f"Time budget of {time_budget_h} h reached; re-run to continue.")
+            return True
+        return False
+
+    allc = pd.concat([candidates, fill_candidates]) if fill_candidates is not None else candidates
+    region_of.update(allc["huc_02"].to_dict())
+    # 1. standard pass
+    for site, row in candidates.iterrows():
+        if site in done or n_ok(row["huc_02"]) >= per_region or site in set(failed["site"]):
+            continue
+        if over_budget():
+            return national_summary(out, allc)
+        attempt(site, row, {}, "")
+    # 2. fill-in pass for regions still short of basins
+    if fill_in:
+        tag = f" [fill-in, gauges within {fill_in.get('buffer_km', 5):g} km]"
+        fc = fill_candidates if fill_candidates is not None else candidates
+        retried = set(failed.loc[failed["reason"].astype(str).str.startswith("[fill-in"), "site"])
+        for site, row in fc.iterrows():
+            if site in done or n_ok(row["huc_02"]) >= per_region or site in retried:
+                continue
+            prev = failed.loc[failed["site"] == site, "reason"].astype(str)
+            if len(prev) and not prev.str.contains("gauges|outside the data").any():
+                continue  # failed for a reason a wider gauge search cannot fix
+            if over_budget():
+                break
+            folder = out / site / "data"
+            for f in ("rainfall.csv", "stations.csv", "basin.json"):
+                (folder / f).unlink(missing_ok=True)
+            attempt(site, row, fill_in, tag)
+    return national_summary(out, allc)
 
 
 def national_summary(out, catalog: Optional[pd.DataFrame] = None) -> pd.DataFrame:
@@ -152,6 +198,8 @@ def national_summary(out, catalog: Optional[pd.DataFrame] = None) -> pd.DataFram
         try:
             d = BasinData.from_folder(f.parent.parent / "data")
             a = static_attributes(d.forcings, d.area_km2, (d.outlet or d.centroid)[0])
+            bj = f.parent.parent / "data" / "basin.json"
+            row["gauge_search_km"] = json.loads(bj.read_text()).get("gauge_search_km", 5.0) if bj.exists() else 5.0
             row.update(aridity=round(float(a["aridity"]), 2), frac_snow=round(float(a["frac_snow"]), 2),
                        p_mean=round(float(a["p_mean"]), 2), share_day_shifted=round(float((d.stations["day_shift"] != 0).mean()), 2))
             if np.isnan(row.get("lat", np.nan)):

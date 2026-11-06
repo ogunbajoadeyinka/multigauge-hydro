@@ -551,3 +551,35 @@ def test_national_candidate_order(tmp_path):
     assert set(order.index) == {"01013500", "01022500", "02013000"}  # 100 and 9000 km2 excluded
     # regions are interleaved: the first two candidates come from different regions
     assert order["huc_02"].iloc[0] != order["huc_02"].iloc[1]
+
+
+def test_periods_clipped_when_record_ends_early():
+    from multigauge.study import StudyConfig, make_periods
+
+    d = pd.date_range("2000-10-01", "2023-05-13", freq="D")
+    cfg = StudyConfig(train_period=("2001-10-01", "2013-09-30"), validation_period=("2013-10-01", "2017-09-30"),
+                      test_period=("2017-10-01", "2023-09-30"))
+    p = make_periods(d, cfg, 365)
+    assert p["test"][1] == d[-1]
+    with pytest.raises(ValueError):
+        make_periods(pd.date_range("2000-10-01", "2014-11-12", freq="D"), cfg, 365)
+
+
+def test_national_fill_in_pass(tmp_path):
+    """Regions short of basins are retried with the wider gauge search."""
+    from multigauge.national import run_national
+
+    cands = pd.DataFrame({"gauge_name": ["A", "B"], "huc_02": ["08", "08"], "lat": [32.0, 32.5],
+                          "lon": [-90.0, -90.5], "area_km2": [800.0, 900.0]},
+                         index=pd.Index(["07000001", "07000002"], name="gauge_id"))
+    calls = []
+
+    def fake_prepare(site, *a, buffer_km=5.0, **k):
+        calls.append((site, buffer_km))
+        raise RuntimeError(f"Fewer than two usable rain gauges for basin {site}.")
+
+    run_national(cands, tmp_path, None, per_region=1, prepare=fake_prepare)
+    assert calls == [("07000001", 5.0), ("07000002", 5.0), ("07000001", 25.0), ("07000002", 25.0)]
+    calls.clear()
+    run_national(cands, tmp_path, None, per_region=1, prepare=fake_prepare)  # nothing is retried twice
+    assert calls == []
