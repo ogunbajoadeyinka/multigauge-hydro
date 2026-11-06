@@ -344,8 +344,23 @@ with tabs[3]:
             c = ex["subbasin_contributions"].set_index(ex["subbasin_contributions"].columns[0])
             st.plotly_chart(R.fig_contributions(c), config=PLOT, width="stretch")
             st.dataframe(c.round(3), width="stretch")
-        else:
-            st.info("Sub-basin results were computed for the Washita; choose it in the sidebar.")
+        sub_root = VALID / "subbasins"
+        if (sub_root / "subbasin_summary.csv").exists():
+            ss = pd.read_csv(sub_root / "subbasin_summary.csv", dtype={"site": str})
+            st.markdown("**Sub-basin study on three large basins** (three training runs each, test October 2017 to "
+                        "September 2023). Four routed sub-basins with gridded weather alone beat the whole-basin model "
+                        "in every basin; once sub-basins are resolved, NOAA gauges add nothing measurable.")
+            show = pd.DataFrame({"Basin": ss["basin"], "Area (km²)": ss["area_km2"], "Gauges": ss["n_gauges"],
+                                 "Sub-basins, gridded only": ss["NSE_routed"], "Sub-basins + gauges": ss["NSE_routed_gauges"],
+                                 "Gain from gauges": ss["gauge_gain_routed"], "± s.d.": ss["gauge_gain_routed_sd"]})
+            st.dataframe(show, width="stretch", hide_index=True)
+            pick = site if (sub_root / site / "contributions.csv").exists() else None
+            if pick:
+                c = pd.read_csv(sub_root / pick / "contributions.csv", index_col=0)
+                st.plotly_chart(R.fig_contributions(c), config=PLOT, width="stretch")
+                st.dataframe(c.round(3), width="stretch")
+            else:
+                st.caption("Choose the Iowa or Flint River in the sidebar to see where their flood flow comes from.")
     elif data.meta.get("synthetic_zones") is not None:
         subs = mg.SubbasinSet.from_synthetic(data)
     else:

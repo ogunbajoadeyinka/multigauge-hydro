@@ -108,9 +108,6 @@ travel-time distributions (`notebooks/subbasins_kaggle.ipynb`, three seeds per m
   seed noise). In the La Moine, gauges raised the lumped model by +0.088, but the sub-basin model without
   gauges was better still (0.752). Much of the value gauges add to a lumped model is spatial information
   that sub-basin gridded weather also provides.
-- An earlier single-seed run on the Washita (Oklahoma) had suggested a large gauge gain in the sub-basin model
-  (0.742 to 0.845); the three-seed runs above do not reproduce it, and that result should be treated as
-  unconfirmed.
 - The sub-basin model still shows where flood water comes from. In the Flint, sub-basin Z1 produces 13 % of
   peak flow and has no NOAA gauge, the screening indicator for a new gauge.
 
