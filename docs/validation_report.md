@@ -1,6 +1,6 @@
 # Validation report: multigauge on five U.S. basins, three sub-basin studies and an 88-basin national survey
 
-*multigauge v0.2.1 · November 2026 · all numbers can be reproduced with
+*multigauge v0.3.0 · November 2026 · all numbers can be reproduced with
 `python scripts/run_validation.py validation` (CPU, about 95 minutes per basin)
 and explored on the [live dashboard](https://multigauge-hydro.streamlit.app) under "Real basins".*
 

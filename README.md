@@ -155,9 +155,9 @@ Contributions and results from new basins are welcome; see [CONTRIBUTING.md](CON
 If you use multigauge, please cite the software:
 
 > Ogunbajo, A. (2026). *multigauge: the value of local rain gauges for pre-trained deep-learning streamflow models*
-> (Version 0.2.1) [Software]. Zenodo. https://doi.org/10.5281/zenodo.23986757
+> (Version 0.3.0) [Software]. Zenodo. https://doi.org/10.5281/zenodo.23986756
 
-To cite all versions (always resolves to the latest), use https://doi.org/10.5281/zenodo.23986756. See also [CITATION.cff](CITATION.cff).
+This DOI always resolves to the latest version; each release also has its own DOI on Zenodo. See also [CITATION.cff](CITATION.cff).
 
 ## Licence
 

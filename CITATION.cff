@@ -5,16 +5,13 @@ authors:
   - family-names: Ogunbajo
     given-names: Adeyinka
     affiliation: "Independent Researcher"
-version: 0.2.1
-date-released: 2026-11-05
+version: 0.3.0
+date-released: 2026-11-06
 license: MIT
-doi: 10.5281/zenodo.23986757
+doi: 10.5281/zenodo.23986756
 identifiers:
   - type: doi
     value: 10.5281/zenodo.23986756
     description: "Concept DOI: all versions, resolves to the latest"
-  - type: doi
-    value: 10.5281/zenodo.23986757
-    description: "Version 0.2.1"
 repository-code: "https://github.com/ogunbajoadeyinka/multigauge-hydro"
-keywords: [hydrology, streamflow, LSTM, rain gauge, Voronoi, machine learning]
+keywords: [hydrology, streamflow, LSTM, rain gauge, deep learning, flood forecasting, national survey, CAMELS, Daymet]

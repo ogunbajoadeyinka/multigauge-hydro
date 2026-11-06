@@ -15,7 +15,7 @@ Quick start
 """
 from importlib import import_module
 
-__version__ = "0.2.1"
+__version__ = "0.3.0"
 
 # public name -> module that defines it (imported on first use, so that
 # importing multigauge does not load PyTorch until a model is needed)
