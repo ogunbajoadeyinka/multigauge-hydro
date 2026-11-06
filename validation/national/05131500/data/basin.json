@@ -1,0 +1,10 @@
+{
+  "name": "LITTLE FORK RIVER AT LITTLEFORK, MN",
+  "usgs_site": "05131500",
+  "flow_unit": "m3/s",
+  "area_km2": 4350.2,
+  "gauge_search_km": 25.0,
+  "gauge_min_years_fraction": 0.6,
+  "outlet_lat": 48.39577636,
+  "outlet_lon": -93.5493266
+}

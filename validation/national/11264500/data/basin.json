@@ -1,0 +1,10 @@
+{
+  "name": "MERCED R A HAPPY ISLES BRIDGE NR YOSEMITE CA",
+  "usgs_site": "11264500",
+  "flow_unit": "m3/s",
+  "area_km2": 468.3,
+  "gauge_search_km": 25.0,
+  "gauge_min_years_fraction": 0.6,
+  "outlet_lat": 37.73131496,
+  "outlet_lon": -119.5590514
+}

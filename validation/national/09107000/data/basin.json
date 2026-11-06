@@ -1,0 +1,10 @@
+{
+  "name": "TAYLOR RIVER AT TAYLOR PARK, CO.",
+  "usgs_site": "09107000",
+  "flow_unit": "m3/s",
+  "area_km2": 329.6,
+  "gauge_search_km": 25.0,
+  "gauge_min_years_fraction": 0.6,
+  "outlet_lat": 38.86027127,
+  "outlet_lon": -106.5666966
+}

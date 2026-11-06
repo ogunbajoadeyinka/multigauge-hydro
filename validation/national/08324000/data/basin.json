@@ -1,0 +1,10 @@
+{
+  "name": "JEMEZ RIVER NEAR JEMEZ, NM",
+  "usgs_site": "08324000",
+  "flow_unit": "m3/s",
+  "area_km2": 1217.2,
+  "gauge_search_km": 25.0,
+  "gauge_min_years_fraction": 0.6,
+  "outlet_lat": 35.6619833,
+  "outlet_lon": -106.7434389
+}

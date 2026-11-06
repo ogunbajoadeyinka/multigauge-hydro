@@ -1,0 +1,10 @@
+{
+  "name": "HOMOCHITTO RIVER AT ROSETTA, MS",
+  "usgs_site": "07292500",
+  "flow_unit": "m3/s",
+  "area_km2": 2068.8,
+  "gauge_search_km": 25.0,
+  "gauge_min_years_fraction": 0.6,
+  "outlet_lat": 31.3247222,
+  "outlet_lon": -91.1094444
+}

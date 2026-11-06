@@ -1,0 +1,10 @@
+{
+  "name": "SAN LORENZO C BL BITTERWATER C NR KING CITY CA",
+  "usgs_site": "11151300",
+  "flow_unit": "m3/s",
+  "area_km2": 601.0,
+  "gauge_search_km": 25.0,
+  "gauge_min_years_fraction": 0.6,
+  "outlet_lat": 36.26802087,
+  "outlet_lon": -121.066303
+}

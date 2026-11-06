@@ -1,0 +1,10 @@
+{
+  "name": "SMITH R NR CRESCENT CITY CA",
+  "usgs_site": "11532500",
+  "flow_unit": "m3/s",
+  "area_km2": 1580.8,
+  "gauge_search_km": 25.0,
+  "gauge_min_years_fraction": 0.6,
+  "outlet_lat": 41.7915026,
+  "outlet_lon": -124.0761887
+}

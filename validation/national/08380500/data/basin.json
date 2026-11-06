@@ -1,0 +1,10 @@
+{
+  "name": "GALLINAS CREEK NEAR MONTEZUMA, NM",
+  "usgs_site": "08380500",
+  "flow_unit": "m3/s",
+  "area_km2": 198.5,
+  "gauge_search_km": 25.0,
+  "gauge_min_years_fraction": 0.6,
+  "outlet_lat": 35.65199444,
+  "outlet_lon": -105.3188306
+}

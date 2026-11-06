@@ -1,0 +1,85 @@
+{
+  "multigauge_version": "0.2.1",
+  "basin": "Eleven Point River near Bardley, MO",
+  "area_km2": 2024.2,
+  "flow_unit": "m3/s",
+  "periods": {
+    "train": [
+      "2001-10-01",
+      "2013-09-30"
+    ],
+    "validation": [
+      "2013-10-01",
+      "2017-09-30"
+    ],
+    "test": [
+      "2017-10-01",
+      "2023-09-30"
+    ]
+  },
+  "pretrained_model": {
+    "n_basins": 531,
+    "best_val_score": 0.7181881427816174,
+    "trained_on": 531,
+    "train_period": [
+      "1980-10-01",
+      "1995-09-30"
+    ],
+    "val_period": [
+      "1995-10-01",
+      "2000-09-30"
+    ],
+    "source": "CAMELS-US",
+    "description": "LSTM pre-trained on 531 CAMELS-US basins (Daymet forcings, CMAL output).",
+    "lookback": 365,
+    "hidden_size": 128,
+    "head": "cmal"
+  },
+  "single_station": null,
+  "single_station_reason": "",
+  "gr4j_parameters": {
+    "X1": 539.6604524101433,
+    "X2": -1.8006846967730992,
+    "X3": 86.44134237563301,
+    "X4": 2.0541466141416507,
+    "DDF": 0.5218536485428662
+  },
+  "notes": [
+    "2 of 3 gauges were moved one day earlier to match the Daymet day (morning-read gauges report rain under the next day): USC00230127, USC00238910. Set day_shift in stations.csv to override."
+  ],
+  "config": {
+    "train_period": [
+      "2001-10-01",
+      "2013-09-30"
+    ],
+    "validation_period": [
+      "2013-10-01",
+      "2017-09-30"
+    ],
+    "test_period": [
+      "2017-10-01",
+      "2023-09-30"
+    ],
+    "split_fractions": [
+      0.6,
+      0.2,
+      0.2
+    ],
+    "gauge_inputs": [
+      "lumped",
+      "voronoi",
+      "disaggregated"
+    ],
+    "single_station": "auto",
+    "n_seeds": 2,
+    "finetune_epochs": 20,
+    "finetune_lr": 0.0002,
+    "include_zero_shot": true,
+    "include_local": false,
+    "include_gr4j": true,
+    "local_config": null,
+    "permutation_repeats": 2,
+    "run_ablation": false,
+    "gr4j_maxiter": 25
+  }
+}

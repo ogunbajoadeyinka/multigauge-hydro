@@ -1,4 +1,4 @@
-# Validation report: multigauge on five U.S. basins and a 68-basin national survey
+# Validation report: multigauge on five U.S. basins and an 88-basin national survey
 
 *multigauge v0.2.1 · November 2026 · all numbers can be reproduced with
 `python scripts/run_validation.py validation` (CPU, about 95 minutes per basin)
@@ -123,54 +123,61 @@ planned.
 ## Finding 5 — national survey: gauges help most where rain, not snow, drives floods
 
 The same study, in a lighter form (2 seeds; gauge average, Voronoi and all-gauge inputs; no local LSTM or
-δHBV), was run on CAMELS basins of 150–5,000 km² drawn in turn from each of the 18 U.S. hydrologic regions
-(`notebooks/national_kaggle.ipynb`, Kaggle GPU, 7.5 hours). All data are public (USGS, Daymet, NOAA
-GHCN-Daily). **68 basins in 16 regions** finished. Of 133 candidates skipped, 113 had fewer than two NOAA gauges with
-long enough records in or near the basin, 4 had streamflow records ending before the test period, 1 had no
-basin boundary in the USGS index, and 15 hit Daymet server time-outs (these are retried on the next run;
-California and the Lower Mississippi have no basins yet). 48 of the 68
-basins are in the pre-training set (their training years, 1980–1995, do not overlap the 2017–2023 test).
+δHBV), was run on CAMELS basins drawn in turn from each of the 18 U.S. hydrologic regions
+(`notebooks/national_kaggle.ipynb`, Kaggle GPU, two runs totalling about 9 hours). All data are public (USGS,
+Daymet, NOAA GHCN-Daily). **88 basins in all 18 regions** finished: 5 in each region except the Rio Grande and
+the Great Basin (4 each). 69 basins used the standard gauge search (gauges inside the basin or within 5 km,
+records covering 80 % of the years); in regions still short of basins, 19 more used a fill-in search (within
+25 km, 60 % of years, basins up to 10,000 km²). Of the candidates skipped, 119 had too few usable NOAA gauges
+even then, 4 had streamflow records that did not cover the test period, and 1 had no basin boundary in the
+USGS index. 64 of the 88 basins are in the pre-training set (their training years, 1980–1995, do not overlap
+the 2017–2023 test). Results per basin are in `validation/national/`.
 
 ![National map](national_map.png)
 
-| | All 68 basins |
+| | All 88 basins |
 |---|---|
-| Median test NSE: GR4J / pre-trained (no tuning) / fine-tuned / fine-tuned + all gauges | 0.711 / 0.329 / 0.720 / **0.763** |
-| Basins where adding every gauge as an input raised NSE | **79 %** (54 of 68); Wilcoxon signed-rank p = 3 × 10⁻⁷ |
-| Median NSE gain, all gauges as inputs (fixed choice) | **+0.024** (mean +0.040) |
-| Median NSE gain, gauge average | +0.013 |
-| Per-basin verdicts, best input (2 seeds) | helps 34 · within noise 28 · negligible 4 · hurts 2 |
-| Basins with at least one morning-read gauge moved one day | 81 % |
+| Median test NSE: GR4J / pre-trained (no tuning) / fine-tuned / fine-tuned + all gauges | 0.703 / 0.397 / 0.728 / **0.772** |
+| Basins where adding every gauge as an input raised NSE | **80 %** (70 of 88); Wilcoxon signed-rank p = 3 × 10⁻⁹ |
+| Median NSE gain, all gauges as inputs (fixed choice) | **+0.021** (mean +0.036) |
+| Median NSE gain, gauge average | +0.011 (positive in 76 %) |
+| Per-basin verdicts, best input (2 seeds) | helps 43 · within noise 37 · negligible 6 · hurts 2 |
+| Basins with at least one morning-read gauge moved one day | 83 % |
 
 **Where gauges help** (gain with all gauges as inputs):
 
 | Basin type | Basins | Median gain | Gain positive in | Median NSE without gauges |
 |---|---|---|---|---|
-| Rain-dominated (snow < 10 % of precipitation) | 34 | **+0.041** | 91 % | 0.61 |
-| Mixed (10–30 % snow) | 21 | +0.018 | 86 % | 0.72 |
-| Snow-dominated (> 30 % snow) | 13 | −0.002 | 38 % | 0.83 |
+| Rain-dominated (snow < 10 % of precipitation) | 43 | **+0.039** | 93 % | 0.61 |
+| Mixed (10–30 % snow) | 28 | +0.017 | 82 % | 0.74 |
+| Snow-dominated (> 30 % snow) | 17 | −0.001 | 41 % | 0.83 |
 
 - **Gauges add skill in most U.S. basins, even though NOAA gauges also feed Daymet.** The gain is small
-  (+0.02 to +0.04 NSE) but consistent, and the national test does not depend on the noisy per-basin seed spread.
-- **The value is concentrated in rain-dominated basins** (the East, the Midwest, Texas, the northern Plains),
-  where short storms are poorly represented in gridded data. In snow-dominated western basins the model is
-  already accurate (median NSE 0.83) and flow is driven by snowpack, so gauges add nothing (Spearman
-  correlation of gain with snow fraction −0.44, p < 0.001).
-- **Gauges help most where the model is weakest** (correlation of gain with the no-gauge NSE −0.46,
-  p < 0.001); in the northern Plains and Texas, gains reach +0.1 to +0.4 NSE.
-- **Basin size, gauge count and gauge density did not predict the gain** in this sample (|ρ| ≤ 0.20,
-  p ≥ 0.1), which argues against simple density rules for network design.
+  (+0.02 to +0.04 NSE) but consistent across the country, and this pooled test does not depend on the noisy
+  per-basin seed spread.
+- **The value is concentrated in rain-dominated basins** (the East, the Midwest, Texas, the northern Plains,
+  California's coastal ranges), where short storms are poorly represented in gridded data. In snow-dominated
+  western basins the model is already accurate (median NSE 0.83) and flow follows the snowpack, so gauges add
+  nothing (Spearman correlation of gain with snow fraction −0.40, p = 1 × 10⁻⁴). Regional medians range from
+  +0.057 (Texas-Gulf) and +0.051 (Upper Mississippi) to about zero in the Great Basin, Rio Grande and Upper
+  Colorado.
+- **Gauges help most where the model is weakest** (correlation of gain with the no-gauge NSE −0.45,
+  p < 10⁻⁴).
+- **Basin size, gauge count, gauge density and aridity did not predict the gain** (|ρ| ≤ 0.15, p ≥ 0.17),
+  which argues against simple density rules for network design.
+- **Gauges found by the wider fill-in search still helped** (positive in 79 % of those 19 basins, median
+  +0.013, against +0.023 for the standard search).
 - **The AI model is not automatically better than a calibrated conceptual model.** Fine-tuned without gauges it
-  beat GR4J in 49 % of basins (54 % with gauges). Its advantage is consistency and transfer; GR4J remains a
+  beat GR4J in 50 % of basins (56 % with gauges). Its advantage is consistency and transfer; GR4J remains a
   necessary benchmark.
-- **The timing check matters nationally:** 81 % of basins had at least one gauge on the morning-read convention.
+- **The timing check matters nationally:** 83 % of basins had at least one gauge on the morning-read convention.
 
 ## Limitations
 
-- Five detailed basins and a 68-basin survey; the survey uses 2 seeds per basin, so individual basin verdicts
+- Five detailed basins and an 88-basin survey; the survey uses 2 seeds per basin, so individual basin verdicts
   are uncertain, and only the pooled national results should be read as general.
-- The survey is limited to basins with at least two long-record NOAA gauges, which favours the East and the
-  Midwest; California and the Lower Mississippi are not yet represented.
+- The survey is limited to basins with at least two long-record NOAA gauges; in sparsely gauged regions this
+  needed a wider (25 km) search, and the Rio Grande and Great Basin have four basins each.
 - In the first, misaligned run the Guadalupe appeared to gain +0.27 NSE from gauges. With aligned gauges
   and the seed spread taken into account, that gain is not there: a reminder to read gauge value
   against seed noise, as the report and dashboard now show.

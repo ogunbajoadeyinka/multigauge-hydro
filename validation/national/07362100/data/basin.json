@@ -1,0 +1,10 @@
+{
+  "name": "SMACKOVER CREEK NEAR SMACKOVER, ARK.",
+  "usgs_site": "07362100",
+  "flow_unit": "m3/s",
+  "area_km2": 991.7,
+  "gauge_search_km": 25.0,
+  "gauge_min_years_fraction": 0.6,
+  "outlet_lat": 33.37527778,
+  "outlet_lon": -92.7766667
+}

@@ -1,0 +1,10 @@
+{
+  "name": "Carrabassett River near North Anson, Maine",
+  "usgs_site": "01047000",
+  "flow_unit": "m3/s",
+  "area_km2": 899.1,
+  "gauge_search_km": 25.0,
+  "gauge_min_years_fraction": 0.6,
+  "outlet_lat": 44.86916667,
+  "outlet_lon": -69.955
+}

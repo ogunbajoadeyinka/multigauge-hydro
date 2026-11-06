@@ -1,0 +1,10 @@
+{
+  "name": "Little Androscoggin River near South Paris, Maine",
+  "usgs_site": "01057000",
+  "flow_unit": "m3/s",
+  "area_km2": 197.3,
+  "gauge_search_km": 25.0,
+  "gauge_min_years_fraction": 0.6,
+  "outlet_lat": 44.30388889,
+  "outlet_lon": -70.5397222
+}

@@ -1,0 +1,10 @@
+{
+  "name": "BAYOU PIERRE NR WILLOWS, MS",
+  "usgs_site": "07290650",
+  "flow_unit": "m3/s",
+  "area_km2": 1686.8,
+  "gauge_search_km": 25.0,
+  "gauge_min_years_fraction": 0.6,
+  "outlet_lat": 32.0186111,
+  "outlet_lon": -90.8783333
+}

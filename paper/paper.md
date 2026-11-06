@@ -104,14 +104,14 @@ depends on the basin and on model structure. NOAA gauges improved the fine-tuned
 (Monocacy River, Maryland; NSE +0.058, about six times its seed spread), were negligible or within noise in
 three, and slightly degraded a lumped model of a 9,400 km² Oklahoma basin. The same gauges, given to a routed
 four-sub-basin model of that basin, raised NSE from 0.74 to 0.85 and identified an ungauged sub-basin producing
-over half of peak flow. A national survey with the same method, run on 68 basins in 16 of the 18 U.S. hydrologic
-regions with public data only, found that adding NOAA gauges raised test NSE in 79% of basins (median +0.024,
-Wilcoxon p = 3 × 10⁻⁷), with the gain concentrated in rain-dominated basins (median +0.041) and absent in
-snow-dominated ones (\autoref{fig:map}). The day-convention check corrects a data error that otherwise makes gauge
+over half of peak flow. A national survey with the same method, run on 88 basins covering all 18 U.S. hydrologic
+regions with public data only, found that adding NOAA gauges raised test NSE in 80% of basins (median +0.021,
+Wilcoxon p = 3 × 10⁻⁹), with the gain concentrated in rain-dominated basins (median +0.039, positive in 93%)
+and absent in snow-dominated ones (\autoref{fig:map}). The day-convention check corrects a data error that otherwise makes gauge
 networks look less valuable. All results, data-preparation code and notebooks needed to reproduce them are
 in the repository, and the software is archived on Zenodo (https://doi.org/10.5281/zenodo.23986756).
 
-![Change in test NSE when NOAA rain gauges are added to the fine-tuned model, 68 USGS basins.
+![Change in test NSE when NOAA rain gauges are added to the fine-tuned model, 88 USGS basins.
 Filled markers are changes larger than the variation between training runs.\label{fig:map}](national_map.png)
 
 # AI usage disclosure

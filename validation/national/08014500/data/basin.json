@@ -1,0 +1,10 @@
+{
+  "name": "Whiskey Chitto Creek Near Oberlin, LA",
+  "usgs_site": "08014500",
+  "flow_unit": "m3/s",
+  "area_km2": 1320.5,
+  "gauge_search_km": 25.0,
+  "gauge_min_years_fraction": 0.6,
+  "outlet_lat": 30.69875,
+  "outlet_lon": -92.8931944
+}

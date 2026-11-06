@@ -1,0 +1,10 @@
+{
+  "name": "BLACK RIVER AT COVENTRY, VT",
+  "usgs_site": "04296000",
+  "flow_unit": "m3/s",
+  "area_km2": 312.4,
+  "gauge_search_km": 25.0,
+  "gauge_min_years_fraction": 0.6,
+  "outlet_lat": 44.8689363,
+  "outlet_lon": -72.2701041
+}

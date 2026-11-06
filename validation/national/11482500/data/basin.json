@@ -1,0 +1,10 @@
+{
+  "name": "REDWOOD C A ORICK CA",
+  "usgs_site": "11482500",
+  "flow_unit": "m3/s",
+  "area_km2": 720.2,
+  "gauge_search_km": 25.0,
+  "gauge_min_years_fraction": 0.6,
+  "outlet_lat": 41.2992896,
+  "outlet_lon": -124.0511825
+}

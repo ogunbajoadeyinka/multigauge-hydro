@@ -102,28 +102,12 @@ site,reason
 02408540,Fewer than two usable rain gauges for basin 02408540.
 09497800,No GHCN precipitation gauges with enough record in or near basin 09497800.
 11480390,No GHCN precipitation gauges with enough record in or near basin 11480390.
-04296000,No GHCN precipitation gauges with enough record in or near basin 04296000.
 02350900,Fewer than two usable rain gauges for basin 02350900.
 08070200,Fewer than two usable rain gauges for basin 08070200.
 11266500,Fewer than two usable rain gauges for basin 11266500.
 01055000,No GHCN precipitation gauges with enough record in or near basin 01055000.
 02215100,Fewer than two usable rain gauges for basin 02215100.
 08101000,No GHCN precipitation gauges with enough record in or near basin 08101000.
-11383500,504 Server Error: Gateway Timeout for url: https://daymet.ornl.gov/single-pixel/api/data?lat=40.02192&lon=-121.92362&vars=prcp%2Csrad%2Ctmax%2Ctmin%2Cvp&start=2000-10-01&end=2023-09-30
-01052500,504 Server Error: Gateway Timeout for url: https://daymet.ornl.gov/single-pixel/api/data?lat=44.90206&lon=-71.27503&vars=prcp%2Csrad%2Ctmax%2Ctmin%2Cvp&start=2000-10-01&end=2023-09-30
-02372250,504 Server Error: Gateway Timeout for url: https://daymet.ornl.gov/single-pixel/api/data?lat=31.68660&lon=-86.41485&vars=prcp%2Csrad%2Ctmax%2Ctmin%2Cvp&start=2000-10-01&end=2023-09-30
-08190500,504 Server Error: Gateway Timeout for url: https://daymet.ornl.gov/single-pixel/api/data?lat=29.85162&lon=-100.54264&vars=prcp%2Csrad%2Ctmax%2Ctmin%2Cvp&start=2000-10-01&end=2023-09-30
-11381500,504 Server Error: Gateway Timeout for url: https://daymet.ornl.gov/single-pixel/api/data?lat=40.14838&lon=-121.80658&vars=prcp%2Csrad%2Ctmax%2Ctmin%2Cvp&start=2000-10-01&end=2023-09-30
-01054200,504 Server Error: Gateway Timeout for url: https://daymet.ornl.gov/single-pixel/api/data?lat=44.26471&lon=-71.16762&vars=prcp%2Csrad%2Ctmax%2Ctmin%2Cvp&start=2000-10-01&end=2023-09-30
-02231000,504 Server Error: Gateway Timeout for url: https://daymet.ornl.gov/single-pixel/api/data?lat=30.24401&lon=-82.49149&vars=prcp%2Csrad%2Ctmax%2Ctmin%2Cvp&start=2000-10-01&end=2023-09-30
-08189500,504 Server Error: Gateway Timeout for url: https://daymet.ornl.gov/single-pixel/api/data?lat=28.55011&lon=-97.93495&vars=prcp%2Csrad%2Ctmax%2Ctmin%2Cvp&start=2000-10-01&end=2023-09-30
-11274500,504 Server Error: Gateway Timeout for url: https://daymet.ornl.gov/single-pixel/api/data?lat=37.24794&lon=-121.44187&vars=prcp%2Csrad%2Ctmax%2Ctmin%2Cvp&start=2000-10-01&end=2023-09-30
-01137500,504 Server Error: Gateway Timeout for url: https://daymet.ornl.gov/single-pixel/api/data?lat=44.28039&lon=-71.59002&vars=prcp%2Csrad%2Ctmax%2Ctmin%2Cvp&start=2000-10-01&end=2023-09-30
-02092500,504 Server Error: Gateway Timeout for url: https://daymet.ornl.gov/single-pixel/api/data?lat=35.05630&lon=-77.73962&vars=prcp%2Csrad%2Ctmax%2Ctmin%2Cvp&start=2000-10-01&end=2023-09-30
-08086290,504 Server Error: Gateway Timeout for url: https://daymet.ornl.gov/single-pixel/api/data?lat=32.24358&lon=-99.14900&vars=prcp%2Csrad%2Ctmax%2Ctmin%2Cvp&start=2000-10-01&end=2023-09-30
-11124500,504 Server Error: Gateway Timeout for url: https://daymet.ornl.gov/single-pixel/api/data?lat=34.59625&lon=-119.90384&vars=prcp%2Csrad%2Ctmax%2Ctmin%2Cvp&start=2000-10-01&end=2023-09-30
-02481510,504 Server Error: Gateway Timeout for url: https://daymet.ornl.gov/single-pixel/api/data?lat=31.05396&lon=-89.57184&vars=prcp%2Csrad%2Ctmax%2Ctmin%2Cvp&start=2000-10-01&end=2023-09-30
-08086212,504 Server Error: Gateway Timeout for url: https://daymet.ornl.gov/single-pixel/api/data?lat=32.46505&lon=-99.48308&vars=prcp%2Csrad%2Ctmax%2Ctmin%2Cvp&start=2000-10-01&end=2023-09-30
 10258500,No GHCN precipitation gauges with enough record in or near basin 10258500.
 02149000,Fewer than two usable rain gauges for basin 02149000.
 11176400,Fewer than two usable rain gauges for basin 11176400.
@@ -132,3 +116,10 @@ site,reason
 11523200,No GHCN precipitation gauges with enough record in or near basin 11523200.
 02196000,Fewer than two usable rain gauges for basin 02196000.
 11224500,No GHCN precipitation gauges with enough record in or near basin 11224500.
+11383500,No GHCN precipitation gauges with enough record in or near basin 11383500.
+01052500,No GHCN precipitation gauges with enough record in or near basin 01052500.
+11381500,Fewer than two usable rain gauges for basin 11381500.
+01054200,No GHCN precipitation gauges with enough record in or near basin 01054200.
+11274500,No GHCN precipitation gauges with enough record in or near basin 11274500.
+11124500,No GHCN precipitation gauges with enough record in or near basin 11124500.
+11451100,"[fill-in, gauges within 25 km] Fewer than two usable rain gauges for basin 11451100."

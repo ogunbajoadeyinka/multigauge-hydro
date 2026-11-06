@@ -1,0 +1,10 @@
+{
+  "name": "VAN DUZEN R NR BRIDGEVILLE CA",
+  "usgs_site": "11478500",
+  "flow_unit": "m3/s",
+  "area_km2": 571.5,
+  "gauge_search_km": 25.0,
+  "gauge_min_years_fraction": 0.6,
+  "outlet_lat": 40.48041636,
+  "outlet_lon": -123.890876
+}

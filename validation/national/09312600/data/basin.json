@@ -1,0 +1,10 @@
+{
+  "name": "WHITE RIVER BL TABBYUNE C NEAR SOLDIER SUMMIT, UT",
+  "usgs_site": "09312600",
+  "flow_unit": "m3/s",
+  "area_km2": 197.5,
+  "gauge_search_km": 25.0,
+  "gauge_min_years_fraction": 0.6,
+  "outlet_lat": 39.8757928,
+  "outlet_lon": -111.0373878
+}

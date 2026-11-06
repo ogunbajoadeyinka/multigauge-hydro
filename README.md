@@ -33,18 +33,18 @@ baselines, with prediction intervals, sub-basin routing, multi-day forecasts and
 Outputs: NSE, KGE, RMSE, percent bias, peak-flow error, CRPS and 90 % interval coverage per model; gauge-value
 tables; hydrographs with prediction intervals; maps; forecast fan charts; and a self-contained HTML report.
 
-## Validation: five U.S. basins and a 68-basin national survey
+## Validation: five U.S. basins and an 88-basin national survey
 
 The CAMELS-US model was tested in detail on five USGS basins it never saw (Oklahoma, Iowa, Georgia, Texas,
-Maryland) and in a national survey of 68 basins in 16 of the 18 U.S. hydrologic regions (2017–2023 test
+Maryland) and in a national survey of 88 basins covering all 18 U.S. hydrologic regions (2017–2023 test
 period). Full results, with limitations, are in [docs/validation_report.md](docs/validation_report.md) and on
 the dashboard under "Real basins".
 
 ![Where NOAA rain gauges improve the AI streamflow model](docs/national_map.png)
 
-- **Nationally, rain gauges help in most basins.** Adding NOAA gauges raised test NSE in 79 % of the 68 basins
-  (median +0.024, Wilcoxon p = 3 × 10⁻⁷). The gain is concentrated in rain-dominated basins (median +0.041,
-  positive in 91 %) and absent in snow-dominated western basins (median −0.002).
+- **Nationally, rain gauges help in most basins.** Adding NOAA gauges raised test NSE in 80 % of the 88 basins
+  (median +0.021, Wilcoxon p = 3 × 10⁻⁹). The gain is concentrated in rain-dominated basins (median +0.039,
+  positive in 93 %) and absent in snow-dominated western basins (median −0.001).
 
 - **Check gauge timing first.** Most NOAA cooperative gauges log morning readings under the next day. multigauge
   detects this and shifts those gauges; without the fix, gauge–Daymet correlation was 0.27–0.65, and 0.90–0.98 after.

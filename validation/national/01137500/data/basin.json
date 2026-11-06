@@ -1,0 +1,10 @@
+{
+  "name": "AMMONOOSUC RIVER AT BETHLEHEM JUNCTION, NH",
+  "usgs_site": "01137500",
+  "flow_unit": "m3/s",
+  "area_km2": 236.9,
+  "gauge_search_km": 5.0,
+  "gauge_min_years_fraction": 0.8,
+  "outlet_lat": 44.2686741,
+  "outlet_lon": -71.6303617
+}

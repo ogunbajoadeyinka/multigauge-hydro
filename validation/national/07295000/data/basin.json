@@ -1,0 +1,10 @@
+{
+  "name": "BUFFALO RIVER NR WOODVILLE, MS",
+  "usgs_site": "07295000",
+  "flow_unit": "m3/s",
+  "area_km2": 464.4,
+  "gauge_search_km": 25.0,
+  "gauge_min_years_fraction": 0.6,
+  "outlet_lat": 31.22694444,
+  "outlet_lon": -91.2955556
+}
