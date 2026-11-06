@@ -554,3 +554,40 @@ def run_routed_study(
     if progress:
         progress(1.0, "Done")
     return RoutedStudyResult(summary, preds, local, contrib, final.travel_times(), members)
+
+
+def make_zones(folder, n: int = 4, points: int = 9, progress=None) -> Path:
+    """Split a basin folder into ``n`` distance bands from the outlet, link
+    them in a chain, download Daymet weather for each, and write
+    ``<folder>/subbasins``. Bands already downloaded are kept."""
+    import json
+
+    from shapely.geometry import mapping
+
+    from .download import daymet_basin
+    from .io import BasinData
+    from .spatial import LocalProjection
+
+    data = BasinData.from_folder(folder)
+    if data.boundary is None or data.outlet is None:
+        raise ValueError("Zones need a basin boundary and the outlet location (basin.json).")
+    zones = auto_zones(data.boundary, data.outlet, n)
+    out = Path(folder) / "subbasins"
+    out.mkdir(exist_ok=True)
+    feats = []
+    for i, z in enumerate(zones):
+        zid = f"Z{i + 1}"
+        c = z.centroid
+        dx, dy = LocalProjection(c.x, c.y).forward(data.outlet[1], data.outlet[0])
+        feats.append({"type": "Feature", "geometry": mapping(z),
+                      "properties": {"id": zid, "downstream": None if i == 0 else f"Z{i}",
+                                     "distance_km": float((dx ** 2 + dy ** 2) ** 0.5)}})
+        if not (out / f"{zid}.csv").exists():
+            f = daymet_basin(z, str(data.dates[0].date()), str(data.dates[-1].date()), n_points=points)
+            f.to_csv(out / f"{zid}.csv", date_format="%Y-%m-%d")
+        if progress:
+            progress(f"{zid}: forcings ready")
+    (out / "subbasins.geojson").write_text(json.dumps({"type": "FeatureCollection", "features": feats}))
+    if progress:
+        progress(f"{len(zones)} zones written to {out}")
+    return out

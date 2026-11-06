@@ -108,31 +108,9 @@ def _cmd_subbasins(a):
 
 def _cmd_zones(a):
     """Approximate sub-basins as distance bands and download their forcings."""
-    from shapely.geometry import mapping
+    from .routing import make_zones
 
-    from .download import daymet_basin
-    from .io import BasinData
-    from .routing import auto_zones
-    from .spatial import LocalProjection
-
-    data = BasinData.from_folder(a.folder)
-    if data.boundary is None or data.outlet is None:
-        raise ValueError("Zones need a basin boundary and the outlet location (basin.json).")
-    zones = auto_zones(data.boundary, data.outlet, a.n)
-    out = Path(a.folder) / "subbasins"
-    out.mkdir(exist_ok=True)
-    feats = []
-    for i, z in enumerate(zones):
-        zid = f"Z{i + 1}"
-        c = z.centroid
-        dx, dy = LocalProjection(c.x, c.y).forward(data.outlet[1], data.outlet[0])
-        feats.append({"type": "Feature", "geometry": mapping(z),
-                      "properties": {"id": zid, "downstream": None if i == 0 else f"Z{i}", "distance_km": float((dx**2 + dy**2) ** 0.5)}})
-        f = daymet_basin(z, str(data.dates[0].date()), str(data.dates[-1].date()), n_points=a.points)
-        f.to_csv(out / f"{zid}.csv", date_format="%Y-%m-%d")
-        print(f"{zid}: forcings downloaded")
-    (out / "subbasins.geojson").write_text(json.dumps({"type": "FeatureCollection", "features": feats}))
-    print(f"{len(zones)} zones written to {out}")
+    make_zones(a.folder, n=a.n, points=a.points, progress=print)
 
 
 def _cmd_pretrain(a):
