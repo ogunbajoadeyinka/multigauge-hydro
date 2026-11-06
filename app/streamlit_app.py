@@ -420,7 +420,7 @@ with tabs[4]:
             st.subheader("Forecast skill (test period)")
             st.plotly_chart(R.fig_skill_by_lead(saved.extras["forecast_skill"]), config=PLOT, width="stretch")
         else:
-            st.info("Forecast tests were run for the Washita; choose it in the sidebar.")
+            st.info("Forecast tests were run for the Iowa and Flint rivers; choose one in the sidebar.")
     if saved is None:
         st.subheader("Forecast skill for this basin")
         st.caption("Trains a forecast model and tests it on the test period, using observed weather as a perfect forecast.")

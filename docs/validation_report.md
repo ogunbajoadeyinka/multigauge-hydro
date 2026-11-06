@@ -116,20 +116,26 @@ city flood-warning networks or radar-based estimates, are where the method shoul
 Sub-basin modelling should be the default for basins well above the 2,000 km² training range: it was the
 largest single improvement measured in this report.
 
-## Finding 4 — forecasts (Washita, 1–7 days)
+## Finding 4 — forecasts (Iowa and Flint rivers, 1–7 days)
 
-Hindcast/forecast LSTM with a per-lead error correction, tested on 2017–2023. Observed weather with
-growing noise stands in for forecasts, so these numbers are an upper bound on skill with real
-weather forecasts.
+Hindcast/forecast LSTM with a per-lead error correction, tested on every day of October 2017 to September
+2023 (`scripts/run_forecast.py`). Observed weather with growing noise stands in for weather forecasts, so
+these numbers are an upper bound on skill with real forecasts. Persistence = today's flow as the forecast.
 
 | Lead (days) | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
 |---|---|---|---|---|---|---|---|
-| Forecast NSE | 0.680 | 0.591 | **0.616** | **0.629** | **0.632** | **0.632** | **0.638** |
-| Persistence (today's flow) NSE | 0.893 | 0.676 | 0.472 | 0.319 | 0.215 | 0.145 | 0.090 |
+| Iowa River — forecast NSE | 0.929 | 0.880 | **0.822** | **0.739** | **0.695** | **0.679** | **0.665** |
+| Iowa River — persistence NSE | 0.966 | 0.896 | 0.807 | 0.711 | 0.617 | 0.534 | 0.464 |
+| Flint River — forecast NSE | **0.874** | **0.849** | **0.840** | **0.837** | **0.838** | **0.839** | **0.834** |
+| Flint River — persistence NSE | 0.708 | 0.209 | −0.160 | −0.374 | −0.467 | −0.498 | −0.525 |
 
-The model beats persistence from day 3 onward, and its skill holds steady out to day 7 while
-persistence collapses. For days 1–2, the current flow is still the better guide; blending the two is
-planned.
+(bold = forecast beats persistence)
+
+- **The slow, large Iowa River** is well predicted by today's flow for a day or two; the model beats
+  persistence from day 3 and keeps NSE above 0.66 at day 7, when persistence has fallen to 0.46.
+- **The flashier Flint River** is where forecasting pays most: the model beats persistence from day 1 and
+  holds NSE near 0.84 for all seven days, while persistence drops below zero by day 3.
+- Blending the model with persistence for the first days in slow rivers is planned.
 
 ## Finding 5 — national survey: gauges help most where rain, not snow, drives floods
 

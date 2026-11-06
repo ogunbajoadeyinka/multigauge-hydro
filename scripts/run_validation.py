@@ -4,8 +4,9 @@
 
 Each validation/<site>/data folder is loaded (gauges are aligned to the
 Daymet day automatically), the full study is run with 3 seeds, and results
-go to validation/<site>/results. The Washita (07326500) also gets the
-sub-basin routing and forecast runs. Ends by writing validation/summary.csv.
+go to validation/<site>/results; a basin folder with a subbasins/ folder also
+gets the sub-basin routing and forecast runs. Ends by writing
+validation/summary.csv. See also scripts/run_subbasins.py and scripts/run_forecast.py.
 """
 import sys
 import time

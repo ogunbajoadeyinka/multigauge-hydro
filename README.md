@@ -52,7 +52,7 @@ the dashboard under "Real basins".
   La Moine rivers) into four routed sub-basins raised test NSE by **+0.12 to +0.21** with gridded weather alone;
   once sub-basins were resolved, NOAA gauges added nothing measurable (+0.001 to +0.006, three seeds each).
 - **No model wins everywhere:** δHBV, GR4J and the local LSTM each win somewhere; the LSTM + δHBV ensemble is never the worst.
-- **Forecasts** beat persistence from day 3 to day 7 (NSE 0.62–0.64 versus 0.47–0.09).
+- **Forecasts** (Iowa and Flint rivers): NSE 0.67–0.84 at 7 days ahead, against 0.46 and −0.53 for persistence.
 
 ## Install
 
