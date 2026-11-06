@@ -5,6 +5,7 @@
 Each line: [claim number] what the manuscript says -> the value computed here,
 and the file it comes from. Compare them by eye with the manuscript.
 """
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -12,6 +13,7 @@ import pandas as pd
 from scipy import stats
 
 R = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(R / "src"))
 V = R / "validation"
 n = 0
 
@@ -87,10 +89,10 @@ for _, r in ss.iterrows():
 c = pd.read_csv(V / "subbasins/02347500/contributions.csv", index_col=0)
 show("Flint: peak-flow share of the ungauged sub-basin", f"{c.loc[c['n_gauges'] == 0, 'peak_flow_share'].round(2).to_dict()}",
      "validation/subbasins/02347500/contributions.csv")
+from multigauge.results import load_saved_study  # noqa: E402
+
 for site, label in [("05453100", "Iowa"), ("02347500", "Flint")]:
-    sm = pd.read_csv(V / site / "results/metrics_summary.csv") if (V / site / "results/metrics_summary.csv").exists() else None
-    ms = pd.read_csv(V / site / "results/metrics_by_seed.csv")
-    t = ms[(ms.period == "test") & (ms.metric == "NSE") & (ms.model == "finetuned")]["value"].mean()
-    show(f"{label}: whole-basin fine-tuned NSE (mean of 3 seeds)", round(t, 3), f"validation/{site}/results/metrics_by_seed.csv")
+    t = load_saved_study(V / site / "results").summary.loc[("finetuned", "test"), "NSE"]
+    show(f"{label}: whole-basin fine-tuned NSE (3-seed ensemble)", round(t, 3), f"validation/{site}/results (summary table)")
 lm = s.set_index("site").loc["05585000"]
 show("La Moine: whole-basin fine-tuned NSE without / with gauges", f"{lm.NSE_finetuned:.3f} / {lm.NSE_ft_disaggregated:.3f}", f)
