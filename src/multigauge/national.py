@@ -32,6 +32,13 @@ HUC2_NAMES = {
 }
 
 
+_TRANSIENT = ("504", "502", "503", "500 Server", "429", "Timeout", "timed out", "Connection", "Max retries")
+
+
+def _transient(reason: str) -> bool:
+    return any(k in reason for k in _TRANSIENT)
+
+
 def light_config(n_seeds: int = 2):
     """Study settings for a many-basin survey: fewer seeds and inputs."""
     from .study import StudyConfig
@@ -83,6 +90,7 @@ def run_national(candidates: pd.DataFrame, out, model, per_region: int = 5, hybr
     out.mkdir(parents=True, exist_ok=True)
     failed_f = out / "failed.csv"
     failed = pd.read_csv(failed_f, dtype={"site": str}) if failed_f.exists() else pd.DataFrame(columns=["site", "reason"])
+    failed = failed[~failed["reason"].astype(str).map(_transient)]
     t0 = time.time()
     done = {p.parent.parent.name for p in out.glob("*/results/run_info.json")}
     for site, row in candidates.iterrows():
@@ -107,6 +115,9 @@ def run_national(candidates: pd.DataFrame, out, model, per_region: int = 5, hybr
                 f"{d.rainfall.shape[1]} gauges, {(time.time() - t) / 60:.1f} min")
         except Exception as exc:  # record and move on; one basin must not stop the survey
             reason = str(exc).splitlines()[0][:200] if str(exc) else type(exc).__name__
+            if _transient(reason):  # a server or network hiccup: try this basin again on the next run
+                log(f"  {site} postponed (download error, retried next run): {reason[:90]}")
+                continue
             failed = pd.concat([failed, pd.DataFrame([{"site": site, "reason": reason}])], ignore_index=True)
             failed.to_csv(failed_f, index=False)
             log(f"  {site} skipped: {reason}")
