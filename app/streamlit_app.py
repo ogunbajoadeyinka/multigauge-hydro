@@ -241,10 +241,11 @@ if saved is not None and nat.exists():
         from multigauge.national import fig_national_map
 
         ns = pd.read_csv(nat, dtype={"site": str, "huc_02": str})
+        g_all = ns["NSE_ft_disaggregated"] - ns["NSE_finetuned"]
         c1, c2, c3 = st.columns(3)
         c1.metric("Basins", len(ns))
-        c2.metric("Gauges clearly help", int((ns["verdict"] == "helps").sum()))
-        c3.metric("Median NSE gain", f"{ns['NSE_gain'].median():+.3f}")
+        c2.metric("Gauges raised NSE in", f"{(g_all > 0).mean():.0%} of basins")
+        c3.metric("Median NSE gain (all gauges)", f"{g_all.median():+.3f}")
         st.plotly_chart(fig_national_map(ns), config=PLOT, width="stretch")
         st.caption("Each marker is a USGS basin; colour is the change in test NSE when the basin's NOAA rain gauges are "
                    "added to the fine-tuned model; filled markers are gains or losses larger than training noise. "

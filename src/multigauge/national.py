@@ -183,7 +183,7 @@ def fig_national_map(summary: pd.DataFrame):
     fig = go.Figure(go.Scattergeo(
         lat=s["lat"], lon=s["lon"], text=text, hoverinfo="text", mode="markers",
         marker=dict(size=9 + 2 * np.sqrt(s["n_gauges"]), color=gain, cmin=-0.1, cmax=0.1, symbol=sym,
-                    colorscale=[[0, "#b2182b"], [0.5, "#f7f7f7"], [1, "#2166ac"]], line=dict(width=0.6, color="#444"),
+                    colorscale=[[0, "#e34948"], [0.5, "#f0efec"], [1, "#2a78d6"]], line=dict(width=0.6, color="#444"),
                     colorbar=dict(title="NSE gain<br>from gauges"))))
     fig.update_geos(scope="usa", projection_type="albers usa", showland=True, landcolor="#f2f2f2",
                     showlakes=True, lakecolor="#ffffff", subunitcolor="#bbbbbb")
