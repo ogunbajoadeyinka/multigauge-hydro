@@ -20,8 +20,8 @@ bibliography: paper.bib
 ---
 
 <!-- DRAFT for the author. Before submitting: (1) read every sentence and rewrite it in your own words;
-(2) add your ORCID; (3) confirm the affiliation; (4) make the AI usage disclosure exactly true for how
-you worked; (5) re-check the national-survey numbers if the survey is re-run; (6) check every reference. -->
+(2) replace the placeholder ORCID 0000-0000-0000-0000 with yours; (3) confirm the affiliation; (4) make the AI usage disclosure exactly true for how
+you worked, and only keep the sentence that you reviewed and validated everything once you have; (5) re-check the national-survey numbers if the survey is re-run; (6) check every reference. -->
 
 # Summary
 
@@ -121,8 +121,9 @@ October–November 2026) wrote most of the source code, tests, notebooks and doc
 this paper, working from the author's instructions. The author defined the research question and scope, chose
 among alternative designs proposed during development, ran the pre-training on cloud GPUs, and reviewed the
 validation results. Correctness was checked by an automated test suite (unit tests and end-to-end tests on a
-synthetic basin with known rainfall), by comparison of the pre-trained model with published CAMELS benchmarks, by
-manual inspection of the validation results, and by the author's review and revision of this manuscript.
+synthetic basin with known rainfall), by comparison of the pre-trained model with published CAMELS benchmarks and
+by manual inspection of the validation results. The author has reviewed, edited and validated all AI-assisted
+outputs, including the code, documentation and this manuscript, and takes full responsibility for them.
 <!-- Edit this paragraph so that every statement is exactly true for how you worked. -->
 
 # Acknowledgements
