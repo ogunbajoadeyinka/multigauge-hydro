@@ -583,3 +583,18 @@ def test_national_fill_in_pass(tmp_path):
     calls.clear()
     run_national(cands, tmp_path, None, per_region=1, prepare=fake_prepare)  # nothing is retried twice
     assert calls == []
+
+
+def test_national_summary_with_overlapping_lists(tmp_path):
+    """The standard and fill-in candidate lists overlap; the summary must still work."""
+    import shutil
+    from pathlib import Path
+    from multigauge.national import national_summary
+
+    src = Path(__file__).resolve().parents[1] / "validation" / "01643000"
+    shutil.copytree(src / "data", tmp_path / "01643000" / "data")
+    shutil.copytree(src / "results", tmp_path / "01643000" / "results")
+    cat = pd.DataFrame({"gauge_name": ["Monocacy"], "huc_02": ["02"], "lat": [39.39], "lon": [-77.38], "area_km2": [2100.0]},
+                       index=pd.Index(["01643000"], name="gauge_id"))
+    s = national_summary(tmp_path, pd.concat([cat, cat]))
+    assert len(s) == 1 and s.loc[0, "region"] == "Mid-Atlantic" and s.loc[0, "gauge_search_km"] == 5.0

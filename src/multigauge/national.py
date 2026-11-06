@@ -135,8 +135,7 @@ def run_national(candidates: pd.DataFrame, out, model, per_region: int = 5, hybr
             log(f"  {site} skipped{tag}: {reason}")
             if not isinstance(exc, (RuntimeError, ValueError)):
                 traceback.print_exc()
-        national_summary(out, pd.concat([candidates, fill_candidates]) if fill_candidates is not None else candidates
-                         ).to_csv(out / "national_summary.csv", index=False)
+        national_summary(out, allc).to_csv(out / "national_summary.csv", index=False)
 
     def over_budget():
         if (time.time() - t0) / 3600 > time_budget_h:
@@ -145,6 +144,7 @@ def run_national(candidates: pd.DataFrame, out, model, per_region: int = 5, hybr
         return False
 
     allc = pd.concat([candidates, fill_candidates]) if fill_candidates is not None else candidates
+    allc = allc[~allc.index.duplicated()]  # the fill-in list repeats most standard candidates
     region_of.update(allc["huc_02"].to_dict())
     # 1. standard pass
     for site, row in candidates.iterrows():
@@ -190,6 +190,8 @@ def national_summary(out, catalog: Optional[pd.DataFrame] = None) -> pd.DataFram
         st = r.station_summary
         row = {"site": site, "basin": r.basin_name, "area_km2": round(r.area_km2, 1), "n_gauges": len(st),
                "gauges_per_1000km2": round(1000 * len(st) / r.area_km2, 2)}
+        if catalog is not None:
+            catalog = catalog[~catalog.index.duplicated()]
         if catalog is not None and site in catalog.index:
             row.update(huc_02=catalog.loc[site, "huc_02"], region=HUC2_NAMES.get(catalog.loc[site, "huc_02"], ""),
                        lat=catalog.loc[site, "lat"], lon=catalog.loc[site, "lon"])
