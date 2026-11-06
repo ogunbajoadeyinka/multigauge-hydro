@@ -1,4 +1,4 @@
-# Validation report: multigauge on five U.S. basins and an 88-basin national survey
+# Validation report: multigauge on five U.S. basins, three sub-basin studies and an 88-basin national survey
 
 *multigauge v0.2.1 · November 2026 · all numbers can be reproduced with
 `python scripts/run_validation.py validation` (CPU, about 95 minutes per basin)
@@ -84,26 +84,40 @@ models.
 | Flint, GA | +0.005 (all gauges) | 0.002 | −0.6 % | negligible |
 | Guadalupe, TX | +0.072 (single) | 0.136 | +3.4 % (worse) | within noise; every model is poor here |
 | Washita, OK — lumped | −0.020 (single) | 0.002 | −1.1 % | hurts, for every gauge input (−0.02 to −0.10) |
-| Washita, OK — **sub-basins** | **+0.103** (routed 0.742 → routed + gauges 0.845) | — | — | clear gain |
 
 The GHCN gauges used here are among the stations Daymet is interpolated from, so in a lumped model
-they mostly repeat information the model already has. They help where the basin-average hides
-spatial structure. The clearest example is the Washita split into four sub-basins
-(LSTM per sub-basin, gamma unit-hydrograph routing):
+they mostly repeat information the model already has.
 
-| Washita model | Test NSE | KGE |
-|---|---|---|
-| One lumped LSTM (fine-tuned, gridded weather) | 0.214 | 0.543 |
-| Four sub-basin LSTMs, routed | 0.742 | 0.807 |
-| Four sub-basin LSTMs, routed, with each sub-basin's gauges | **0.845** | **0.902** |
+### Sub-basins: spatial detail matters more than the gauges
 
-The sub-basin model also shows where the flood water comes from: sub-basin Z1, the area nearest the
-outlet, produces 54 % of peak flow and has **no gauge**, so it is the highest-priority location for a
-new gauge. The three gauges in Z2 improve that sub-basin by 0.05 NSE; the one gauge in Z3 by 0.12.
+Three large basins (Iowa, Flint and La Moine rivers) were each split into four distance-band sub-basins with
+their own Daymet weather, each run by the pre-trained LSTM and routed to the outlet with learned gamma
+travel-time distributions (`notebooks/subbasins_kaggle.ipynb`, three seeds per model, Kaggle GPU).
+
+| Basin | Area (km²) | Gauges | Lumped, fine-tuned | Sub-basins, Daymet only | Sub-basins + gauges | Gain from gauges in the sub-basin model (± s.d.) |
+|---|---|---|---|---|---|---|
+| Iowa River at Marengo, IA | 7,185 | 13 | 0.715 | **0.832** | 0.835 | +0.003 ± 0.029 |
+| Flint River, GA | 4,778 | 5 | 0.678 | **0.885** | 0.886 | +0.001 ± 0.009 |
+| La Moine River at Ripley, IL | 3,336 | 7 | 0.632 (0.720 with gauges) | **0.752** | 0.758 | +0.006 ± 0.032 |
+
+(test NSE, October 2017 to September 2023; lumped values from the main study and the national survey)
+
+- **Resolving sub-basins gave large gains with gridded weather alone:** +0.12 to +0.21 NSE over the lumped
+  fine-tuned model, in all three basins and all seeds.
+- **Once sub-basins were resolved, NOAA gauges added nothing measurable** (+0.001 to +0.006, well within
+  seed noise). In the La Moine, gauges raised the lumped model by +0.088, but the sub-basin model without
+  gauges was better still (0.752). Much of the value gauges add to a lumped model is spatial information
+  that sub-basin gridded weather also provides.
+- An earlier single-seed run on the Washita (Oklahoma) had suggested a large gauge gain in the sub-basin model
+  (0.742 to 0.845); the three-seed runs above do not reproduce it, and that result should be treated as
+  unconfirmed.
+- The sub-basin model still shows where flood water comes from. In the Flint, sub-basin Z1 produces 13 % of
+  peak flow and has no NOAA gauge, the screening indicator for a new gauge.
 
 **Implication.** Gauge networks that are *not* already in the gridded products, such as state mesonets,
 city flood-warning networks or radar-based estimates, are where the method should show the most value.
-Sub-basin modelling should be the default for basins well above the 2,000 km² training range.
+Sub-basin modelling should be the default for basins well above the 2,000 km² training range: it was the
+largest single improvement measured in this report.
 
 ## Finding 4 — forecasts (Washita, 1–7 days)
 

@@ -48,11 +48,9 @@ the dashboard under "Real basins".
 
 - **Check gauge timing first.** Most NOAA cooperative gauges log morning readings under the next day. multigauge
   detects this and shifts those gauges; without the fix, gauge–Daymet correlation was 0.27–0.65, and 0.90–0.98 after.
-- **Gauge value depends on the basin and the model structure.** In lumped models the gauges help clearly in one basin
-  (Monocacy, +0.058 NSE), are negligible or within seed noise in three, and slightly hurt the lumped Washita model,
-  because these NOAA gauges already feed Daymet. Split into
-  sub-basins, the Washita improves from 0.74 to **0.85** NSE with gauges, and the model names the ungauged sub-basin
-  that produces 54 % of peak flow as the best place for a new gauge.
+- **Spatial detail matters even more than gauges in large basins.** Splitting three large basins (Iowa, Flint,
+  La Moine rivers) into four routed sub-basins raised test NSE by **+0.12 to +0.21** with gridded weather alone;
+  once sub-basins were resolved, NOAA gauges added nothing measurable (+0.001 to +0.006, three seeds each).
 - **No model wins everywhere:** δHBV, GR4J and the local LSTM each win somewhere; the LSTM + δHBV ensemble is never the worst.
 - **Forecasts** beat persistence from day 3 to day 7 (NSE 0.62–0.64 versus 0.47–0.09).
 

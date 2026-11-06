@@ -101,10 +101,9 @@ suite runs on every commit, and pre-trained models ship with the package.
 The repository includes a validation on five USGS basins in five states that are outside the pre-training set
 (the pre-trained model has a median test NSE of 0.68 over 531 CAMELS basins). It found that gauge value
 depends on the basin and on model structure. NOAA gauges improved the fine-tuned model clearly in one basin
-(Monocacy River, Maryland; NSE +0.058, about six times its seed spread), were negligible or within noise in
-three, and slightly degraded a lumped model of a 9,400 km² Oklahoma basin. The same gauges, given to a routed
-four-sub-basin model of that basin, raised NSE from 0.74 to 0.85 and identified an ungauged sub-basin producing
-over half of peak flow. A national survey with the same method, run on 88 basins covering all 18 U.S. hydrologic
+(Monocacy River, Maryland; NSE +0.058, about six times its seed spread) and were negligible or within noise in
+the others. In three large basins, a routed four-sub-basin model raised NSE by 0.12 to 0.21 over the lumped
+model with gridded weather alone, after which gauges added nothing measurable. A national survey with the same method, run on 88 basins covering all 18 U.S. hydrologic
 regions with public data only, found that adding NOAA gauges raised test NSE in 80% of basins (median +0.021,
 Wilcoxon p = 3 × 10⁻⁹), with the gain concentrated in rain-dominated basins (median +0.039, positive in 93%)
 and absent in snow-dominated ones (\autoref{fig:map}). The day-convention check corrects a data error that otherwise makes gauge
