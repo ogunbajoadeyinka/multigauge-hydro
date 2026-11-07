@@ -10,7 +10,7 @@ tags:
   - flood forecasting
 authors:
   - name: Adeyinka Ogunbajo
-    orcid: 0000-0000-0000-0000
+    orcid: 0009-0002-2887-0625
     affiliation: 1
 affiliations:
   - name: Independent Researcher, United States
@@ -20,7 +20,7 @@ bibliography: paper.bib
 ---
 
 <!-- DRAFT for the author. Before submitting: (1) read every sentence and rewrite it in your own words;
-(2) replace the placeholder ORCID 0000-0000-0000-0000 with yours; (3) confirm the affiliation; (4) make the AI usage disclosure exactly true for how
+(3) confirm the affiliation; (4) make the AI usage disclosure exactly true for how
 you worked, and only keep the sentence that you reviewed and validated everything once you have; (5) re-check the national-survey numbers if the survey is re-run; (6) check every reference. -->
 
 # Summary

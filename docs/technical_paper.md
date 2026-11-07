@@ -1,6 +1,6 @@
 # multigauge v0.3.0: a pre-trained deep-learning workflow for measuring the value of local rain gauges in streamflow prediction
 
-**Technical description and evaluation** · Adeyinka Ogunbajo, Independent Researcher, United States ·
+**Technical description and evaluation** · Adeyinka Ogunbajo (ORCID [0009-0002-2887-0625](https://orcid.org/0009-0002-2887-0625)), Independent Researcher, United States ·
 Software archive: https://doi.org/10.5281/zenodo.23986756 · Code: https://github.com/ogunbajoadeyinka/multigauge-hydro (MIT licence)
 
 ## Abstract
