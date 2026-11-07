@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import re
 import sys
 import tempfile
 import zipfile
@@ -141,7 +142,8 @@ with st.sidebar:
             except (DataError, ValueError) as e:
                 st.error(str(e))
         else:
-            st.info("Upload the four required files (*) to begin.")
+            st.info("Upload the four required files (*) to begin. File formats: see the "
+                    "[user guide](https://github.com/ogunbajoadeyinka/multigauge-hydro/blob/main/docs/user_guide.md#6-run-your-own-basin).")
 
     if saved is not None:
         st.success("Pre-computed results: nothing to run. Explore the tabs.")
@@ -251,7 +253,8 @@ if saved is not None and nat.exists():
                    "added to the fine-tuned model; filled markers are gains or losses larger than training noise. "
                    "Method: notebooks/national_kaggle.ipynb.")
 
-tabs = st.tabs(["Basin & gauges", "Model comparison", "Gauge value", "Sub-basins", "Forecast", "Download", "Method"])
+tabs = st.tabs(["Basin & gauges", "Model comparison", "Gauge value", "Sub-basins", "Forecast", "Download", "Method",
+                "Technical paper", "How to use"])
 from multigauge import report as R  # noqa: E402
 
 # ---------------------------------------------------------------- basin
@@ -513,3 +516,36 @@ Uploaded files are processed in memory for your session only and are not stored.
 Source code, documentation and citation: see the GitHub repository (MIT licence).
 """
     )
+
+
+def show_markdown_doc(path: Path, image_dir: Path) -> None:
+    """Render a Markdown file from docs/, showing its images with st.image."""
+    if not path.exists():
+        st.info(f"{path.name} is not available in this installation.")
+        return
+    img = re.compile(r"^!\[(?P<cap>[^\]]*)\]\((?P<src>[^)]+)\)\s*$")
+    chunk = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        m = img.match(line.strip())
+        if m:
+            if chunk:
+                st.markdown("\n".join(chunk))
+                chunk = []
+            f = image_dir / Path(m["src"]).name
+            if f.exists():
+                st.image(str(f), caption=m["cap"], width="stretch")
+        else:
+            chunk.append(line)
+    if chunk:
+        st.markdown("\n".join(chunk))
+
+
+# ------------------------------------------------------------ technical paper
+with tabs[7]:
+    st.caption("Model description: equations, verification and evaluation. Also in the repository as "
+               "[docs/technical_paper.md](https://github.com/ogunbajoadeyinka/multigauge-hydro/blob/main/docs/technical_paper.md).")
+    show_markdown_doc(ROOT / "docs" / "technical_paper.md", ROOT / "app" / "images")
+
+# ---------------------------------------------------------------- how to use
+with tabs[8]:
+    show_markdown_doc(ROOT / "docs" / "user_guide.md", ROOT / "app" / "images")

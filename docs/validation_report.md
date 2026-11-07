@@ -13,7 +13,7 @@ uses gridded weather, and if so, where and how should the gauges be used?
 
 | Item | Choice |
 |---|---|
-| Pre-trained model | LSTM (128 units, 365-day lookback, CMAL probabilistic head, NSE\* loss) trained on 531 CAMELS-US basins (October 1980 to September 1995, validated on 1995–2000), with Daymet inputs and 9 static attributes computed from the forcings |
+| Pre-trained model | LSTM (128 units, 365-day lookback, three-component CMAL probabilistic head trained by negative log-likelihood) trained on 531 CAMELS-US basins (October 1980 to September 1995, validated on 1995–2000), with Daymet inputs and 9 static attributes computed from the forcings |
 | Hybrid | Differentiable HBV (δHBV) with LSTM-learned parameters, trained on the same basins |
 | Validation basins | 5 USGS basins not in the training set, in 5 climates (table below); data from USGS, Daymet and NOAA GHCN-Daily, prepared automatically by `prepare_usgs_basin` |
 | Periods | train 2001-10 to 2013-09 · validation 2013-10 to 2017-09 · **test 2017-10 to 2023-09** (all scores below are test scores) |

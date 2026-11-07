@@ -12,6 +12,8 @@ baselines, with prediction intervals, sub-basin routing, multi-day forecasts and
 **Live dashboard:** https://multigauge-hydro.streamlit.app ·
 **Run it on any USGS gauge (free GPU):** [Open in Colab](https://colab.research.google.com/github/ogunbajoadeyinka/multigauge-hydro/blob/main/notebooks/run_your_basin.ipynb)
 
+**Documentation:** [user guide](docs/user_guide.md) (how to use the dashboard and run your own basin) · [technical paper](docs/technical_paper.md) (equations, verification and evaluation) · [validation report](docs/validation_report.md). Both are also tabs in the dashboard.
+
 ## Why
 
 - LSTMs trained on **many basins** are far more accurate than single-basin models
